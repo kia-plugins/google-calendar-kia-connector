@@ -20,7 +20,7 @@ it('returns JSON on 200 with a bearer token', async () => {
 
 it('401 throws an error whose code is auth (core classifies by code)', async () => {
   const { client } = mk([jsonRes(401, { error: 'x' })]);
-  const err = await client.get('https://x/y').catch((e: { code?: string }) => e);
+  const err = (await client.get('https://x/y').catch((e: unknown) => e)) as { code?: string };
   expect(err.code).toBe('auth');
   expect(isAuthError(err)).toBe(true);
 });
