@@ -11,7 +11,8 @@ KIAgent memory as `calendar.event` documents. Read-only
 - **Choose calendars:** the source's folder settings list every calendar on
   the account; the ones you show in Google Calendar are preselected.
 - **Sync:** every 5 minutes, incrementally (Google sync tokens). Events from
-  one year back to about 13 months ahead. Declined events are kept (marked);
+  one year before the account was connected up to about 13 months ahead
+  (past events stay in memory). Declined events are kept (marked);
   working-location entries are skipped. Several accounts can be connected —
   the same invite on two accounts is one occurrence (`metadata.occurrenceKey`).
 

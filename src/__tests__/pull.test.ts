@@ -25,7 +25,8 @@ const doc = (cal: string, id: string) => ({ type: 'calendar.event', accountId: '
 
 it('first pull: full lists every calendar; tokens commit only in the final batch; phase backfill', async () => {
   const { batches, calls } = await run({ calendars: { [A]: { full: [ev('e1'), ev('x', { status: 'cancelled' })], fullToken: 'TA' }, [B]: { full: [ev('e2')], fullToken: 'TB' } } }, null);
-  expect(batches.map((b) => b.phase)).toEqual(['backfill', 'backfill', 'backfill']);
+  // The final cleanup batch flips the account to live on the first pull.
+  expect(batches.map((b) => b.phase)).toEqual(['backfill', 'backfill', 'live']);
   expect(batches[0].items.map((i) => i.event.id)).toEqual(['e1']);
   expect(batches[0].cursor.calendars).toEqual({});
   expect(batches[1].cursor.calendars).toEqual({});
@@ -129,9 +130,50 @@ it('items are chunked at 250 per batch', async () => {
   const many = Array.from({ length: 600 }, (_, i) => ev(`e${i}`));
   const { batches } = await run({ calendars: { [A]: { full: many } } }, null, [], [roots[0]]);
   expect(batches.map((b) => b.items.length)).toEqual([250, 250, 100, 0]);
+  expect(batches.map((b) => b.phase)).toEqual(['backfill', 'backfill', 'backfill', 'live']);
 });
 
 it('multi-page full list reads every page before yielding', async () => {
   const { batches } = await run({ calendars: { [A]: { full: [[ev('p1')], [ev('p2')]] } } }, null, [], [roots[0]]);
   expect(batches[0].items.map((i) => i.event.id)).toEqual(['p1', 'p2']);
+});
+
+it('a calendarList failure fails the pull instead of degrading names and colours', async () => {
+  const cur: Cursor = { v: 1, since: 'S', calendars: { [A]: { syncToken: 'a1', fullAt: fresh } } };
+  const { batches, error } = await run({ calendarList: 500, calendars: { [A]: { inc: { a1: { items: [ev('e1')], next: 'a2' } } } } }, cur, [], [roots[0]]);
+  expect(batches).toEqual([]);
+  expect(error).toBeInstanceOf(Error);
+});
+
+it('a full list that ends without a sync token warns (every pull would re-list)', async () => {
+  const { fetchFn } = calWorld({ calendarList: cals, calendars: {} });
+  const noToken = async (url: string, init?: unknown) => {
+    if (url.includes('/events')) {
+      const body = new TextEncoder().encode(JSON.stringify({ items: [ev('e1')], timeZone: 'UTC' }));
+      return { status: 200, statusText: 'OK', headers: {}, body };
+    }
+    return fetchFn(url, init as never);
+  };
+  const source = createCalendarSource(makeHost(noToken as never, fakeQuery([])), { ...instantClock, now: () => NOW });
+  const session = fakeSession({ credentials: { accessToken: 't' } as any, account: { id: 'acc1', config: { folderRoots: [roots[0]] } } as any });
+  const out: Batch<Cursor, CalItem>[] = [];
+  for await (const b of source.pull(session, null)) out.push(b);
+  expect(out.at(-1)!.cursor.calendars[A]).toEqual({ fullAt: new Date(NOW).toISOString() });
+  expect(session.logs.some(([lvl, msg]) => lvl === 'warn' && /no sync token/.test(msg))).toBe(true);
+});
+
+it('stale cleanup keeps paging until an empty page, however the store clamps', async () => {
+  const docs = Array.from({ length: 700 }, (_, i) => doc(A, `old${i}`));
+  const q = {
+    search: jest.fn(async (qq: { offset?: number }) => {
+      const off = qq.offset ?? 0;
+      return docs.slice(off, off + 300); // a store that clamps below 500
+    }),
+  };
+  const { fetchFn } = calWorld({ calendarList: cals, calendars: { [A]: { full: [] } } });
+  const source = createCalendarSource(makeHost(fetchFn, q as never), { ...instantClock, now: () => NOW });
+  const session = fakeSession({ credentials: { accessToken: 't' } as any, account: { id: 'acc1', config: { folderRoots: [roots[0]] } } as any });
+  const out: Batch<Cursor, CalItem>[] = [];
+  for await (const b of source.pull(session, null)) out.push(b);
+  expect(out.at(-1)!.deletions).toHaveLength(700);
 });

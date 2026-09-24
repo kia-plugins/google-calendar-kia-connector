@@ -41,3 +41,12 @@ it('404 / 410 / 403 surface as CalendarApiError with the status, no retry', asyn
     expect(fetch).toHaveBeenCalledTimes(1);
   }
 });
+
+it('a cancelled signal stops the 5xx backoff instead of sleeping it out', async () => {
+  const ac = new AbortController();
+  ac.abort();
+  const fetch = jest.fn(async () => jsonRes(503, {}));
+  const client = new CalendarClient({ fetch, getToken: async () => 'tok', sleep: instantClock.sleep, signal: ac.signal });
+  await expect(client.get('https://x/y')).rejects.toThrow();
+  expect(fetch.mock.calls.length).toBeLessThanOrEqual(1);
+});

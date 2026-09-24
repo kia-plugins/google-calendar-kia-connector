@@ -30,7 +30,12 @@ async function requireToken(session: Session): Promise<string> {
 export function createCalendarSource(host: HostFor<'net' | 'query'>, seams: CalendarSeams = {}): Source<Cursor, CalItem> {
   const now = seams.now ?? Date.now;
   const clientFor = (session: Session) =>
-    new CalendarClient({ fetch: host.net.fetch, getToken: () => requireToken(session), sleep: seams.sleep });
+    new CalendarClient({
+      fetch: host.net.fetch,
+      getToken: () => requireToken(session),
+      sleep: seams.sleep,
+      signal: session.signal,
+    });
   const tokenClient = (token: string) =>
     new CalendarClient({ fetch: host.net.fetch, getToken: async () => token, sleep: seams.sleep });
 

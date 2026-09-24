@@ -29,6 +29,8 @@ export interface CalendarClientDeps {
   fetch: NetFetch;
   getToken(): Promise<string>;
   sleep?(ms: number): Promise<void>;
+  /** The session's signal: quit/remove cancels instead of sleeping out a backoff. */
+  signal?: AbortSignal;
 }
 
 export class CalendarClient {
@@ -37,7 +39,11 @@ export class CalendarClient {
   async get<T>(url: string): Promise<T> {
     const res = await requestWithRetry(
       async () => this.deps.fetch(url, { headers: { authorization: `Bearer ${await this.deps.getToken()}` } }),
-      { label: `calendar ${new URL(url).pathname}`, sleep: this.deps.sleep },
+      {
+        label: `calendar ${new URL(url).pathname}`,
+        sleep: this.deps.sleep,
+        signal: this.deps.signal,
+      },
     );
     const text = new TextDecoder().decode(res.body);
     if (res.status >= 200 && res.status < 300) return JSON.parse(text) as T;

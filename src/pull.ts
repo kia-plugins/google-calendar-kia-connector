@@ -36,8 +36,10 @@ export async function* pullCalendars(args: {
   const roots = rootsOf(session);
   let cur: Cursor = prune(args.cursor ?? { v: 1, since: iso(now - SINCE_DAYS * DAY), calendars: {} }, roots.map((r) => r.id));
 
-  // Names/colours/zones for the documents; failures fall back to the root name.
-  const listing = await listCalendars(client).catch((e) => { if (isAuthError(e)) throw e; return []; });
+  // Names/colours/zones for the documents. A failure fails the pull (the
+  // engine retries): degrading to root names would rewrite every document
+  // now and again when the listing recovers.
+  const listing = await listCalendars(client);
   const meta = (id: string, name: string, zone: string): CalMeta => {
     const c = listing.find((x) => x.id === id);
     return { id, name: c?.summaryOverride ?? c?.summary ?? name, color: c?.backgroundColor, timeZone: c?.timeZone ?? zone };
@@ -81,6 +83,8 @@ export async function* pullCalendars(args: {
       const r = await listAll(client, root.id, { timeMin: cur.since, timeMax: iso(now + HORIZON_DAYS * DAY) });
       const cal = meta(root.id, root.name, r.timeZone);
       const live = r.events.filter(isLive);
+      if (!r.nextSyncToken)
+        session.log('warn', `google-calendar: full list of ${root.id} returned no sync token — it will be re-listed every pull`);
       fully.set(root.id, {
         live: new Set(live.map((e) => externalIdOf(root.id, e.id))),
         entry: r.nextSyncToken ? { syncToken: r.nextSyncToken, fullAt: iso(now) } : { fullAt: iso(now) },
@@ -103,7 +107,8 @@ export async function* pullCalendars(args: {
     const calendars = { ...cur.calendars };
     for (const [id, f] of fully) calendars[id] = f.entry;
     cur = { ...cur, calendars };
-    yield { phase, items: [], deletions, cursor: cur };
+    // The last batch of every pull: it also flips a first pull to live.
+    yield { phase: 'live', items: [], deletions, cursor: cur };
   }
 
   if (attempted > 0 && failed === attempted) {
