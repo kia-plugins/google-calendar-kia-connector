@@ -126,3 +126,60 @@ describe('dist bundle loads standalone', () => {
     }
   }, 30_000);
 });
+
+/** A 401 inside the BUNDLED pull must leave it as an error with
+ *  `code: 'auth'` — the code is what core reads to move the account to
+ *  needsReauth (the fork relays it; core's own tests cover the relay). */
+const AUTH_PROBE_JS = `
+const m = require('./index.js');
+const e = m.default ?? m;
+const res401 = { status: 401, statusText: '', headers: {}, body: new Uint8Array() };
+e.activate({
+  self: { id: 'kia.google-calendar', dataDir: '/tmp' },
+  log: () => {},
+  net: { fetch: async () => res401 },
+  query: { search: async () => [] },
+})
+  .then(async (r) => {
+    const src = r.sources[0];
+    const session = {
+      account: { id: 'acc1', config: { folderRoots: [{ id: 'a@example.com', name: 'a' }] } },
+      credentials: async () => ({ accessToken: 't' }),
+      log: () => {},
+    };
+    const cursor = { v: 1, since: new Date(0).toISOString(), calendars: {
+      'a@example.com': { syncToken: 'tok', fullAt: new Date().toISOString() } } };
+    try {
+      for await (const _ of src.pull(session, cursor)) {}
+      console.error('pull did not throw');
+      process.exit(2);
+    } catch (err) {
+      process.exit(err && err.code === 'auth' ? 0 : 3);
+    }
+  })
+  .catch((err) => {
+    console.error(err && err.stack ? err.stack : String(err));
+    process.exit(1);
+  });
+`;
+
+describe('bundled pull auth error', () => {
+  it('a 401 leaves the bundled pull as an error whose code is auth', () => {
+    const root = join(__dirname, '..', '..');
+    execFileSync(process.execPath, [join(root, 'build.mjs')], { cwd: root });
+    const sandbox = mkdtempSync(join(tmpdir(), 'gcal-auth-'));
+    try {
+      copyFileSync(join(root, 'dist', 'index.js'), join(sandbox, 'index.js'));
+      writeFileSync(join(sandbox, 'probe.js'), AUTH_PROBE_JS);
+      let status = 0;
+      try {
+        execFileSync(process.execPath, ['probe.js'], { cwd: sandbox, stdio: 'pipe' });
+      } catch (e) {
+        status = (e as { status?: number }).status ?? -1;
+      }
+      expect(status).toBe(0);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  }, 30_000);
+});
