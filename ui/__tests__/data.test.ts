@@ -1,4 +1,4 @@
-import { joinOccurrences, mergeTranscripts, monthRange, overlaps, searchAll, summaryLines, transcriptIndex, weekRange, type EventDoc, type TranscriptDoc } from '../data';
+import { joinOccurrences, layoutLanes, mergeTranscripts, onDay, monthRange, overlaps, searchAll, summaryLines, transcriptIndex, weekRange, type EventDoc, type TranscriptDoc } from '../data';
 
 const e = (id: string, key: string, cal: string, start: string, end: string): EventDoc => ({
   id, accountId: 'a', title: id,
@@ -72,4 +72,37 @@ it('transcriptIndex keys by occurrenceKey', () => {
 it('summaryLines returns the first lines under ## Summary', () => {
   expect(summaryLines('# T\n\n## Summary\n- a\n- b\n- c\n\n## Transcript\nx', 2)).toEqual(['- a', '- b']);
   expect(summaryLines(null, 2)).toEqual([]);
+});
+
+const allDay = (id: string, startDate: string, endDate: string): EventDoc => {
+  const x = e(id, id, 'c', `${startDate}T00:00:00.000Z`, `${endDate}T00:00:00.000Z`);
+  return { ...x, metadata: { ...x.metadata, allDay: true, startDate, endDate } };
+};
+
+it('all-day events use their dates, not instants (end date exclusive)', () => {
+  const ev = allDay('h', '2026-09-24', '2026-09-26');
+  expect(onDay(ev, new Date(2026, 8, 23))).toBe(false);
+  expect(onDay(ev, new Date(2026, 8, 24))).toBe(true);
+  expect(onDay(ev, new Date(2026, 8, 25))).toBe(true);
+  expect(onDay(ev, new Date(2026, 8, 26))).toBe(false);
+  expect(overlaps(ev, new Date(2026, 8, 26), new Date(2026, 9, 3))).toBe(false);
+  expect(overlaps(ev, new Date(2026, 8, 25), new Date(2026, 9, 3))).toBe(true);
+});
+
+it('a timed event is on the local day it starts', () => {
+  const s = new Date(2026, 8, 24, 23, 30);
+  const ev = e('t', 't', 'c', s.toISOString(), new Date(2026, 8, 25, 0, 30).toISOString());
+  expect(onDay(ev, new Date(2026, 8, 24))).toBe(true);
+  expect(onDay(ev, new Date(2026, 8, 25))).toBe(false);
+});
+
+it('layoutLanes splits overlapping occurrences and resets after a gap', () => {
+  const o = (k: string, s: string, en: string) => ({ key: k, primary: e(k, k, 'c', s, en), copies: [] });
+  const placed = layoutLanes([
+    o('a', '2026-09-24T08:00:00.000Z', '2026-09-24T09:00:00.000Z'),
+    o('b', '2026-09-24T08:30:00.000Z', '2026-09-24T09:30:00.000Z'),
+    o('c', '2026-09-24T09:00:00.000Z', '2026-09-24T09:15:00.000Z'),
+    o('d', '2026-09-24T11:00:00.000Z', '2026-09-24T12:00:00.000Z'),
+  ]);
+  expect(placed.map((p) => [p.occ.key, p.lane, p.lanes])).toEqual([['a', 0, 2], ['b', 1, 2], ['c', 0, 2], ['d', 0, 1]]);
 });

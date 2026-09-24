@@ -12,7 +12,7 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.ui.json"
   },
   "devDependencies": {
     "@kiagent/connector-sdk": "file:.sdk/kiagent-connector-sdk-1.6.0.tgz",

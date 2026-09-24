@@ -38,8 +38,36 @@ export function monthRange(d: Date) {
   return { start, end: addDays(start, 42) };
 }
 
-export const overlaps = (e: EventDoc, start: Date, end: Date): boolean =>
-  Date.parse(e.metadata.start) < end.getTime() && Date.parse(e.metadata.end) > start.getTime();
+/** Local calendar date as YYYY-MM-DD. */
+export const dayKey = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const localMidnight = (ymd: string): number => {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, d).getTime();
+};
+
+/** An all-day event is placed by its dates (end exclusive), never by the
+ *  instants, which are midnight in the calendar's own time zone. */
+function span(e: EventDoc): [number, number] {
+  const m = e.metadata;
+  if (m.allDay && m.startDate && m.endDate) return [localMidnight(m.startDate), localMidnight(m.endDate)];
+  return [Date.parse(m.start), Date.parse(m.end)];
+}
+
+export const overlaps = (e: EventDoc, start: Date, end: Date): boolean => {
+  const [s, en] = span(e);
+  return s < end.getTime() && en > start.getTime();
+};
+
+/** Timed: starts on that local day. All-day: covers that date. */
+export function onDay(e: EventDoc, day: Date): boolean {
+  const m = e.metadata;
+  if (m.allDay && m.startDate && m.endDate) {
+    const k = dayKey(day);
+    return m.startDate <= k && k < m.endDate;
+  }
+  return dayKey(new Date(m.start)) === dayKey(day);
+}
 
 export interface Occurrence { key: string; primary: EventDoc; copies: EventDoc[] }
 
@@ -76,4 +104,32 @@ export function summaryLines(markdown: string | null, n: number): string[] {
   const after = markdown.split(/^## Summary\s*$/m)[1];
   if (!after) return [];
   return after.split(/^## /m)[0].split('\n').map((l) => l.trim()).filter(Boolean).slice(0, n);
+}
+
+export interface Placed { occ: Occurrence; lane: number; lanes: number }
+
+/** Side-by-side lanes for one day's timed occurrences: each takes the first
+ *  lane that is free at its start; a cluster of overlapping ones shares the
+ *  column width evenly. */
+export function layoutLanes(occs: Occurrence[]): Placed[] {
+  const sorted = [...occs].sort((a, b) => Date.parse(a.primary.metadata.start) - Date.parse(b.primary.metadata.start));
+  const out: Placed[] = [];
+  let cluster: Placed[] = [];
+  let laneEnds: number[] = [];
+  let clusterEnd = -Infinity;
+  const close = () => { for (const p of cluster) p.lanes = laneEnds.length; cluster = []; laneEnds = []; };
+  for (const occ of sorted) {
+    const start = Date.parse(occ.primary.metadata.start);
+    const end = Math.max(Date.parse(occ.primary.metadata.end), start + 1);
+    if (start >= clusterEnd) close();
+    let lane = laneEnds.findIndex((e) => e <= start);
+    if (lane === -1) lane = laneEnds.length;
+    laneEnds[lane] = end;
+    clusterEnd = cluster.length === 0 ? end : Math.max(clusterEnd, end);
+    const p = { occ, lane, lanes: 1 };
+    cluster.push(p);
+    out.push(p);
+  }
+  close();
+  return out;
 }
