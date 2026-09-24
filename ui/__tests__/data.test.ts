@@ -89,11 +89,12 @@ it('all-day events use their dates, not instants (end date exclusive)', () => {
   expect(overlaps(ev, new Date(2026, 8, 25), new Date(2026, 9, 3))).toBe(true);
 });
 
-it('a timed event is on the local day it starts', () => {
+it('a timed event is on every local day it touches', () => {
   const s = new Date(2026, 8, 24, 23, 30);
   const ev = e('t', 't', 'c', s.toISOString(), new Date(2026, 8, 25, 0, 30).toISOString());
+  expect(onDay(ev, new Date(2026, 8, 23))).toBe(false);
   expect(onDay(ev, new Date(2026, 8, 24))).toBe(true);
-  expect(onDay(ev, new Date(2026, 8, 25))).toBe(false);
+  expect(onDay(ev, new Date(2026, 8, 25))).toBe(true);
 });
 
 it('layoutLanes splits overlapping occurrences and resets after a gap', () => {

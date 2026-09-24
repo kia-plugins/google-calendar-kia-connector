@@ -6,7 +6,7 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "lib": ["es2022", "dom"],
-    "types": ["jest"],
+    "types": ["jest", "node"],
     "noEmit": true,
     "skipLibCheck": true
   },

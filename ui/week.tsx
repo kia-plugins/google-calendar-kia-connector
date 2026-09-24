@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { layoutLanes, onDay, type Occurrence, type TranscriptDoc } from './data';
+import { layoutLanes, minutesOnDay, onDay, type Occurrence, type TranscriptDoc } from './data';
 import { FALLBACK_COLOR, sameDay, time } from './format';
 import { HOUR_PX, s, tint } from './styles';
 
@@ -72,14 +72,12 @@ export function Week({ days, occurrences, transcripts, onSelect }: Props) {
           </div>
           {days.map((d) => {
             const placed = layoutLanes(timed.filter((o) => onDay(o.primary, d)));
-            const midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
             return (
               <div key={d.getTime()} style={s.dayCol}>
                 {HOURS.map((h) => <div key={h} style={{ ...s.hourLine, top: h * HOUR_PX }} />)}
                 {placed.map(({ occ, lane, lanes }) => {
                   const m = occ.primary.metadata;
-                  const startMin = (Date.parse(m.start) - midnight) / 60_000;
-                  const endMin = Math.min((Date.parse(m.end) - midnight) / 60_000, 24 * 60);
+                  const [startMin, endMin] = minutesOnDay(occ.primary, d);
                   const height = Math.max(20, ((endMin - startMin) * HOUR_PX) / 60);
                   const color = colorOf(occ);
                   const declined = m.selfResponse === 'declined';
@@ -108,7 +106,7 @@ export function Week({ days, occurrences, transcripts, onSelect }: Props) {
                   );
                 })}
                 {sameDay(d, now) && (
-                  <div style={{ ...s.nowLine, top: ((now.getTime() - midnight) / 60_000) * (HOUR_PX / 60) }} />
+                  <div style={{ ...s.nowLine, top: (now.getHours() * 60 + now.getMinutes()) * (HOUR_PX / 60) }} />
                 )}
               </div>
             );

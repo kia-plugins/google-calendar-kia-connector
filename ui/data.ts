@@ -59,14 +59,33 @@ export const overlaps = (e: EventDoc, start: Date, end: Date): boolean => {
   return s < end.getTime() && en > start.getTime();
 };
 
-/** Timed: starts on that local day. All-day: covers that date. */
+const dayBounds = (day: Date): [number, number] => [
+  new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime(),
+  new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime(),
+];
+
+/** Timed: any part of it falls on that local day (end exclusive; a
+ *  zero-length event counts on its start day). All-day: covers that date. */
 export function onDay(e: EventDoc, day: Date): boolean {
   const m = e.metadata;
   if (m.allDay && m.startDate && m.endDate) {
     const k = dayKey(day);
     return m.startDate <= k && k < m.endDate;
   }
-  return dayKey(new Date(m.start)) === dayKey(day);
+  const [mid, next] = dayBounds(day);
+  const s = Date.parse(m.start);
+  const en = Date.parse(m.end);
+  return s < next && (en > mid || s >= mid);
+}
+
+/** Wall-clock minutes of a timed event on one day, clipped to [0, 1440].
+ *  Wall clock (not ms since midnight) keeps DST days right. */
+export function minutesOnDay(e: EventDoc, day: Date): [number, number] {
+  const [mid, next] = dayBounds(day);
+  const s = Date.parse(e.metadata.start);
+  const en = Date.parse(e.metadata.end);
+  const wall = (t: number) => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes(); };
+  return [s <= mid ? 0 : wall(s), en >= next ? 1440 : wall(en)];
 }
 
 export interface Occurrence { key: string; primary: EventDoc; copies: EventDoc[] }
