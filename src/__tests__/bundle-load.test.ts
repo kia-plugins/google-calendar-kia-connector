@@ -18,7 +18,7 @@
  *     repo's node_modules happened to be on the resolution path.
  */
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { HostFor, Query, Source } from '@kiagent/connector-sdk';
@@ -162,6 +162,17 @@ e.activate({
     process.exit(1);
   });
 `;
+
+describe('page contribution ships', () => {
+  it('every contributes.ui id has dist/ui/<id>.js under 5 MiB (runs after the build above)', () => {
+    const root = join(__dirname, '..', '..');
+    const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'));
+    const ids = (manifest.contributes.ui ?? []).map((u: { id: string }) => u.id);
+    expect(ids).toEqual(['calendar']);
+    expect(manifest.engine).toBe('^2.5.0');
+    for (const id of ids) expect(statSync(join(root, 'dist', 'ui', `${id}.js`)).size).toBeLessThan(5 * 1024 * 1024);
+  });
+});
 
 describe('bundled pull auth error', () => {
   it('a 401 leaves the bundled pull as an error whose code is auth', () => {

@@ -15,11 +15,15 @@ KIAgent memory as `calendar.event` documents. Read-only
   (past events stay in memory). Declined events are kept (marked);
   working-location entries are skipped. Several accounts can be connected —
   the same invite on two accounts is one occurrence (`metadata.occurrenceKey`).
+- **Calendar page:** adds a **Calendar** row to the sidebar (week and month
+  views, per-calendar toggles, event details, and the linked meeting
+  transcript when one was recorded). Needs KIAgent platform 2.5.0 or later.
+  The page runs inside the app with full access — install consent says so.
 
 ## Develop
 
 ```bash
 npm install
 npm test
-npm run build   # dist/index.js
+npm run build   # dist/index.js + dist/ui/calendar.js
 ```

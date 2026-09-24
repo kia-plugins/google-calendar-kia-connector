@@ -1,13 +1,15 @@
 {
   "id": "kia.google-calendar",
   "name": "Google Calendar",
-  "version": "0.1.0",
-  "engine": "^2.4.0",
+  "version": "1.0.0",
+  "engine": "^2.5.0",
   "entry": "dist/index.js",
   "caps": ["net", "query"],
   "contributes": {
     "sources": [{ "id": "google-calendar", "oauth": "google" }],
-    "senders": []
+    "senders": [],
+    "ui": [{ "id": "calendar", "slot": "screen", "title": "Calendar",
+             "nav": { "group": "Memory", "order": 40, "icon": "calendar" } }]
   },
   "icon": "icon.png"
 }
