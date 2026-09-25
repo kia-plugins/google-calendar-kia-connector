@@ -154,3 +154,16 @@ export function layoutLanes(occs: Occurrence[]): Placed[] {
   close();
   return out;
 }
+
+/** A Google link opened as a given account (`authuser` takes an email), so
+ *  a browser signed into several Google accounts shows the right one. */
+export function withAuthUser(url: string, email: string | undefined): string {
+  if (!email) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('authuser', email);
+    return u.toString();
+  } catch {
+    return url;
+  }
+}

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { summarySection, type Occurrence, type TranscriptDoc } from './data';
+import { summarySection, withAuthUser, type Occurrence, type TranscriptDoc } from './data';
 import { Markdown } from './markdown';
 import { FALLBACK_COLOR } from './format';
 import { s } from './styles';
@@ -9,6 +9,8 @@ interface Props {
   transcript?: TranscriptDoc;
   onClose(): void;
   onOpenTranscript(meetingId: string): void;
+  /** The Google account (email) the event came from. */
+  account?: string;
   /** Set when opened from a day's list: returns to that list. */
   back?: { label: string; onBack(): void };
 }
@@ -33,7 +35,7 @@ function when(m: Occurrence['primary']['metadata']): string {
   return `${day} · ${t(a)} – ${t(b)}`;
 }
 
-export function Detail({ occ, transcript, onClose, onOpenTranscript, back }: Props) {
+export function Detail({ occ, transcript, onClose, onOpenTranscript, back, account }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -58,7 +60,7 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back }: Pro
             {occ.copies.map((c) => c.metadata.calendarName).join(' · ')}
           </span>
           {occ.primary.url && (
-            <a href={occ.primary.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: 'var(--accent-text)', textDecoration: 'none' }}>Open in Google</a>
+            <a href={withAuthUser(occ.primary.url, account)} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: 'var(--accent-text)', textDecoration: 'none' }}>Open in Google</a>
           )}
           <button type="button" style={s.iconBtn} aria-label="Close" onClick={onClose}>✕</button>
         </div>

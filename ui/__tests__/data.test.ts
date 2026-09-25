@@ -1,4 +1,4 @@
-import { joinOccurrences, layoutLanes, mergeTranscripts, onDay, monthRange, overlaps, searchAll, summarySection, transcriptIndex, weekRange, type EventDoc, type TranscriptDoc } from '../data';
+import { joinOccurrences, layoutLanes, mergeTranscripts, onDay, monthRange, overlaps, searchAll, summarySection, transcriptIndex, withAuthUser, weekRange, type EventDoc, type TranscriptDoc } from '../data';
 
 const e = (id: string, key: string, cal: string, start: string, end: string): EventDoc => ({
   id, accountId: 'a', title: id,
@@ -110,4 +110,13 @@ it('layoutLanes splits overlapping occurrences and resets after a gap', () => {
     o('d', '2026-09-24T11:00:00.000Z', '2026-09-24T12:00:00.000Z'),
   ]);
   expect(placed.map((p) => [p.occ.key, p.lane, p.lanes])).toEqual([['a', 0, 2], ['b', 1, 2], ['c', 0, 2], ['d', 0, 1]]);
+});
+
+it('withAuthUser sets the account on a Google link and leaves bad input alone', () => {
+  expect(withAuthUser('https://www.google.com/calendar/event?eid=x', 'a@b.com'))
+    .toBe('https://www.google.com/calendar/event?eid=x&authuser=a%40b.com');
+  expect(withAuthUser('https://www.google.com/calendar/event?eid=x&authuser=0', 'a@b.com'))
+    .toBe('https://www.google.com/calendar/event?eid=x&authuser=a%40b.com');
+  expect(withAuthUser('https://x.test/e', undefined)).toBe('https://x.test/e');
+  expect(withAuthUser('not a url', 'a@b.com')).toBe('not a url');
 });

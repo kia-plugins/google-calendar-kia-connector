@@ -146,6 +146,7 @@ export default function CalendarPage({ params, navigate }: {
           <Detail
             occ={current}
             transcript={tIndex.get(current.key)}
+            account={accounts.find((a) => a.accountId === current.primary.accountId)?.identifier}
             onClose={close}
             onOpenTranscript={(id) => navigate('transcripts', { anchor: id })}
             back={day ? { label: dayLabel(day), onBack: () => setSelected(null) } : undefined}

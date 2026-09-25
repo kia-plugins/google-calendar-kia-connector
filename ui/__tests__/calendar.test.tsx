@@ -121,3 +121,14 @@ it('the event panel renders the transcript summary as markdown', async () => {
   expect(section.textContent).not.toContain('**');
   expect(section.textContent).not.toContain('hi');
 });
+
+it('Open in Google signs in as the account the event came from', async () => {
+  const onB = { ...ev('9', 'B', 'home', 'Z', '2026-09-24T14:00:00.000Z', '2026-09-24T15:00:00.000Z'),
+    title: 'Home thing', url: 'https://www.google.com/calendar/event?eid=abc' };
+  await mount([onB]);
+  await act(async () => { fireEvent.click(await screen.findByText('Home thing')); });
+  const link = screen.getByRole('link', { name: 'Open in Google' }) as HTMLAnchorElement;
+  const u = new URL(link.href);
+  expect(u.searchParams.get('eid')).toBe('abc');
+  expect(u.searchParams.get('authuser')).toBe('me@home.com');
+});
