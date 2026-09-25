@@ -8,6 +8,8 @@ interface Props {
   transcript?: TranscriptDoc;
   onClose(): void;
   onOpenTranscript(meetingId: string): void;
+  /** Set when opened from a day's list: returns to that list. */
+  back?: { label: string; onBack(): void };
 }
 
 const RESPONSE: Record<string, string> = {
@@ -30,7 +32,7 @@ function when(m: Occurrence['primary']['metadata']): string {
   return `${day} · ${t(a)} – ${t(b)}`;
 }
 
-export function Detail({ occ, transcript, onClose, onOpenTranscript }: Props) {
+export function Detail({ occ, transcript, onClose, onOpenTranscript, back }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -44,6 +46,11 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript }: Props) {
   return (
     <aside aria-label="Event details" style={s.panel}>
       <div style={s.panelHead}>
+        {back && (
+          <button type="button" aria-label={`Back to ${back.label}`} style={{ ...s.iconBtn, alignSelf: 'flex-start', padding: 0, color: 'var(--accent-text)' }} onClick={back.onBack}>
+            {`‹ ${back.label}`}
+          </button>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ ...s.dot, width: 10, height: 10, background: m.calendarColor ?? FALLBACK_COLOR }} />
           <span style={{ fontSize: 11, color: 'var(--text-secondary)', flex: 1 }}>

@@ -3,6 +3,7 @@ import {
   joinOccurrences, LOOKBACK_MS, mergeTranscripts, monthRange, overlaps, searchAll, transcriptIndex, weekRange,
   type EventDoc, type Invoke, type Occurrence, type TranscriptDoc,
 } from './data';
+import { DayPanel, dayLabel } from './day';
 import { Detail } from './detail';
 import { Month } from './month';
 import { Rail, type RailAccount } from './rail';
@@ -50,6 +51,7 @@ export default function CalendarPage({ params, navigate }: {
   const [accounts, setAccounts] = useState<RailAccount[]>([]);
   const [hidden, setHidden] = useState<Set<string>>(loadHidden);
   const [selected, setSelected] = useState<Occurrence | null>(null);
+  const [day, setDay] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const transcriptsLoaded = useRef(false);
   const seq = useRef(0);
@@ -110,7 +112,10 @@ export default function CalendarPage({ params, navigate }: {
     : new Date(c.getFullYear(), c.getMonth() + dir, 1)));
   const days = Array.from({ length: view === 'week' ? 7 : 42 }, (_, i) =>
     new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate() + i));
-  const close = useCallback(() => setSelected(null), []);
+  const close = useCallback(() => { setSelected(null); setDay(null); }, []);
+  const pickDay = useCallback((d: Date) => { setSelected(null); setDay(d); }, []);
+  // An event picked on the grid (not from the day list) drops the day.
+  const pickEvent = useCallback((o: Occurrence) => { setDay(null); setSelected(o); }, []);
   // Keep the open panel in step with refreshed data (or close it if the event went away).
   const current = selected ? occurrences.find((o) => o.key === selected.key) ?? null : null;
 
@@ -134,16 +139,19 @@ export default function CalendarPage({ params, navigate }: {
         <Rail cursor={cursor} accounts={accounts} hidden={hidden} onToggle={toggle} onPick={setCursor} onManage={() => navigate('sources')} />
         <main style={s.main}>
           {view === 'week'
-            ? <Week days={days} occurrences={occurrences} transcripts={tIndex} onSelect={setSelected} />
-            : <Month grid={days} month={cursor.getMonth()} occurrences={occurrences} transcripts={tIndex} onSelect={setSelected} />}
+            ? <Week days={days} occurrences={occurrences} transcripts={tIndex} onSelect={pickEvent} onPickDay={pickDay} />
+            : <Month grid={days} month={cursor.getMonth()} occurrences={occurrences} transcripts={tIndex} onSelect={pickEvent} onPickDay={pickDay} />}
         </main>
-        {current && (
+        {current ? (
           <Detail
             occ={current}
             transcript={tIndex.get(current.key)}
             onClose={close}
             onOpenTranscript={(id) => navigate('transcripts', { anchor: id })}
+            back={day ? { label: dayLabel(day), onBack: () => setSelected(null) } : undefined}
           />
+        ) : day && (
+          <DayPanel day={day} occurrences={occurrences} transcripts={tIndex} onSelect={setSelected} onClose={close} />
         )}
       </div>
     </div>

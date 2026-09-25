@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 
 type Styles = Record<string, CSSProperties>;
 
-export const HOUR_PX = 48;
+export const HOUR_PX = 60;
 
 /** Event fill: the calendar colour washed into the surface, so it follows
  *  light and dark themes. */
@@ -86,7 +86,6 @@ export const s: Styles = {
   eventTitle: { fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   eventTime: { fontSize: 10.5, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
   eventDeclined: { opacity: 0.5, textDecoration: 'line-through' },
-  badge: { color: 'var(--accent-text)', fontSize: 9, marginLeft: 4 },
   nowLine: { position: 'absolute', left: -4, right: 0, height: 2, background: '#e11d48', pointerEvents: 'none' },
 
   monthGrid: { flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(6, minmax(0, 1fr))', minHeight: 0 },
@@ -95,6 +94,13 @@ export const s: Styles = {
   monthNum: { fontSize: 12, fontWeight: 600, padding: '2px 4px', alignSelf: 'flex-start', borderRadius: 'var(--radius-sm)', fontVariantNumeric: 'tabular-nums' },
   monthItem: { display: 'flex', alignItems: 'center', gap: 5, border: 0, background: 'transparent', padding: '1px 4px', fontSize: 11, textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontFamily: 'inherit', whiteSpace: 'nowrap', overflow: 'hidden' },
   dot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
+  dayRow: {
+    display: 'flex', alignItems: 'center', gap: 10, width: '100%', boxSizing: 'border-box', padding: '8px 10px',
+    border: 0, borderRadius: 'var(--radius-sm)', background: 'transparent', color: 'var(--text-primary)',
+    fontFamily: 'inherit', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+  },
+  dayRowTime: { width: 92, flexShrink: 0, fontSize: 11, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' },
+  dayLink: { border: 0, background: 'transparent', padding: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 6 },
 
   panel: {
     width: 372, flexShrink: 0, borderLeft: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)',

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { layoutLanes, minutesOnDay, onDay, type Occurrence, type TranscriptDoc } from './data';
 import { FALLBACK_COLOR, sameDay, time } from './format';
+import { dayLabel } from './day';
+import { MicIcon } from './icons';
 import { HOUR_PX, s, tint } from './styles';
 
 interface Props {
@@ -8,15 +10,24 @@ interface Props {
   occurrences: Occurrence[];
   transcripts: Map<string, TranscriptDoc>;
   onSelect(o: Occurrence): void;
+  onPickDay(d: Date): void;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
+
+/** Text for an event box of this height: short meetings get really small
+ *  type on one line, so back-to-back ones stay readable and apart. */
+function sizing(height: number) {
+  if (height < 16) return { font: 8, pad: '0 3px', mic: 7, time: false };
+  if (height < 34) return { font: 9.5, pad: '1px 4px', mic: 9, time: false };
+  return { font: 11.5, pad: '3px 6px', mic: 11, time: true };
+}
 
 function colorOf(o: Occurrence): string {
   return o.primary.metadata.calendarColor ?? FALLBACK_COLOR;
 }
 
-export function Week({ days, occurrences, transcripts, onSelect }: Props) {
+export function Week({ days, occurrences, transcripts, onSelect, onPickDay }: Props) {
   const scroller = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -36,12 +47,14 @@ export function Week({ days, occurrences, transcripts, onSelect }: Props) {
           const today = sameDay(d, now);
           return (
             <div key={d.getTime()} style={s.dayHead}>
-              <span style={{ ...s.dow, color: today ? 'var(--accent-text)' : undefined }}>
-                {d.toLocaleDateString(undefined, { weekday: 'short' })}
-              </span>
-              <span style={{ ...s.dayNum, ...(today ? { background: 'var(--accent-solid)', color: '#fff' } : {}) }}>
-                {d.getDate()}
-              </span>
+              <button type="button" style={s.dayLink} aria-label={`All meetings on ${dayLabel(d)}`} onClick={() => onPickDay(d)}>
+                <span style={{ ...s.dow, color: today ? 'var(--accent-text)' : undefined }}>
+                  {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                </span>
+                <span style={{ ...s.dayNum, ...(today ? { background: 'var(--accent-solid)', color: '#fff' } : {}) }}>
+                  {d.getDate()}
+                </span>
+              </button>
             </div>
           );
         })}
@@ -78,7 +91,10 @@ export function Week({ days, occurrences, transcripts, onSelect }: Props) {
                 {placed.map(({ occ, lane, lanes }) => {
                   const m = occ.primary.metadata;
                   const [startMin, endMin] = minutesOnDay(occ.primary, d);
-                  const height = Math.max(20, ((endMin - startMin) * HOUR_PX) / 60);
+                  // True length minus a 1px gap: a minimum height would draw
+                  // a 10-minute meeting over the one after it.
+                  const height = Math.max(6, ((endMin - startMin) * HOUR_PX) / 60 - 1);
+                  const size = sizing(height);
                   const color = colorOf(occ);
                   const declined = m.selfResponse === 'declined';
                   return (
@@ -92,16 +108,29 @@ export function Week({ days, occurrences, transcripts, onSelect }: Props) {
                         height,
                         left: `calc(${(lane / lanes) * 100}% + 2px)`,
                         width: `calc(${100 / lanes}% - 5px)`,
+                        padding: size.pad,
                         background: tint(color),
-                        borderLeft: `3px solid ${color}`,
+                        borderWidth: '1px 1px 1px 3px',
+                        borderStyle: 'solid',
+                        borderColor: `${tint(color, 60)} ${tint(color, 60)} ${tint(color, 60)} ${color}`,
                         ...(declined ? s.eventDeclined : {}),
                       }}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                        <span style={{ ...s.eventTitle, flex: 1, minWidth: 0 }}>{occ.primary.title ?? '(no title)'}</span>
-                        {transcripts.has(occ.key) && <span style={s.badge} aria-label="Has transcript">●</span>}
+                        <span
+                          style={{
+                            ...s.eventTitle,
+                            flex: 1,
+                            minWidth: 0,
+                            fontSize: size.font,
+                            lineHeight: `${Math.min(height - 2, size.font + 4)}px`,
+                          }}
+                        >
+                          {occ.primary.title ?? '(no title)'}
+                        </span>
+                        {transcripts.has(occ.key) && <MicIcon size={size.mic} />}
                       </span>
-                      {height >= 34 && <span style={s.eventTime}>{`${time(m.start)} – ${time(m.end)}`}</span>}
+                      {size.time && <span style={s.eventTime}>{`${time(m.start)} – ${time(m.end)}`}</span>}
                     </button>
                   );
                 })}

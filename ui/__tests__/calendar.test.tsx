@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import CalendarPage from '../calendar';
 
 const ev = (id: string, acc: string, cal: string, key: string, start: string, end: string) => ({
@@ -28,6 +28,9 @@ async function mount(events: any[], transcripts: any[] = [], accounts?: any[]) {
   });
   return { invoke, navigate, ...view };
 }
+
+// Hidden calendars persist in localStorage; no test may inherit another's.
+beforeEach(() => localStorage.clear());
 
 const shared = [
   ev('1', 'A', 'work', 'K', '2026-09-24T08:00:00.000Z', '2026-09-24T09:00:00.000Z'),
@@ -67,4 +70,32 @@ it('switches to month view', async () => {
     await new Promise((r) => setTimeout(r, 0));
   });
   expect(screen.getByText('September 2026')).toBeTruthy();
+});
+
+it('clicking a day lists all its meetings; one opens its details and Back returns to the day', async () => {
+  const dentist = { ...ev('3', 'B', 'home', 'L', '2026-09-24T12:00:00.000Z', '2026-09-24T13:00:00.000Z'), title: 'Dentist' };
+  const nextDay = { ...ev('4', 'A', 'work', 'N', '2026-09-25T12:00:00.000Z', '2026-09-25T13:00:00.000Z'), title: 'Tomorrow thing' };
+  await mount([...shared, dentist, nextDay]);
+  await screen.findByText('Dentist');
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: /all meetings on .*24/i })); });
+  const panel = screen.getByRole('complementary', { name: 'Day' });
+  expect(within(panel).getByText('Design review')).toBeTruthy();
+  expect(within(panel).getByText('Dentist')).toBeTruthy();
+  expect(within(panel).queryByText('Tomorrow thing')).toBeNull();
+  await act(async () => { fireEvent.click(within(panel).getByText('Dentist')); });
+  const details = screen.getByRole('complementary', { name: 'Event details' });
+  expect(within(details).getByRole('heading', { name: 'Dentist' })).toBeTruthy();
+  await act(async () => { fireEvent.click(within(details).getByRole('button', { name: /back/i })); });
+  expect(screen.getByRole('complementary', { name: 'Day' })).toBeTruthy();
+});
+
+it('month view: clicking a date opens that day', async () => {
+  await mount(shared);
+  await screen.findByText('Design review');
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Month' }));
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: /all meetings on .*24/i })); });
+  expect(within(screen.getByRole('complementary', { name: 'Day' })).getByText('Design review')).toBeTruthy();
 });
