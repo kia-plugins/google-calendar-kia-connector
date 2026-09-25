@@ -13,10 +13,13 @@ const HIDDEN_KEY = 'kia.calendar.hidden';
 const PALETTE = ['#4285f4', '#0b8043', '#8e24aa', '#e67c73', '#f6bf26', '#039be5', '#616161'];
 const invoke: Invoke = (c, r) => (window as any).kiagent.invoke(c, r);
 
+/** `app:get-state` answers with an envelope; the accounts are inside `state`. */
 interface AppState {
-  accounts: Array<{
-    account: { id: string; source: string; identifier: string; config?: { folderRoots?: { id: string; name: string }[] } };
-  }>;
+  state: {
+    accounts: Array<{
+      account: { id: string; source: string; identifier: string; config?: { folderRoots?: { id: string; name: string }[] } };
+    }>;
+  };
 }
 
 function loadHidden(): Set<string> {
@@ -73,7 +76,7 @@ export default function CalendarPage({ params, navigate }: {
       setEvents(evs.filter((e) => overlaps(e, start, end)));
       const colorOf = (id: string, i: number) =>
         evs.find((e) => e.metadata.calendarId === id)?.metadata.calendarColor ?? PALETTE[i % PALETTE.length];
-      setAccounts(state.accounts.filter((a) => a.account.source === 'google-calendar').map((a) => ({
+      setAccounts(state.state.accounts.filter((a) => a.account.source === 'google-calendar').map((a) => ({
         accountId: a.account.id,
         identifier: a.account.identifier,
         calendars: (a.account.config?.folderRoots ?? []).map((r, i) => ({ id: r.id, name: r.name, color: colorOf(r.id, i) })),

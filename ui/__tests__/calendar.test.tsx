@@ -7,10 +7,11 @@ const ev = (id: string, acc: string, cal: string, key: string, start: string, en
 
 async function mount(events: any[], transcripts: any[] = [], accounts?: any[]) {
   const invoke = jest.fn(async (ch: string, q: any) => {
-    if (ch === 'app:get-state') return { accounts: accounts ?? [
+    // The real channel answers with the {state, seq, rev} envelope.
+    if (ch === 'app:get-state') return { seq: 1, rev: 1, state: { accounts: accounts ?? [
       { account: { id: 'A', source: 'google-calendar', identifier: 'me@work.com', config: { folderRoots: [{ id: 'work', name: 'Work' }] } } },
       { account: { id: 'B', source: 'google-calendar', identifier: 'me@home.com', config: { folderRoots: [{ id: 'home', name: 'Home' }] } } },
-    ] };
+    ] } };
     if (ch === 'search:query') {
       const src = q.type === 'calendar.event' ? events : transcripts;
       return src.slice(q.offset, q.offset + q.limit);
