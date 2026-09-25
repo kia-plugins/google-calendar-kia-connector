@@ -109,3 +109,15 @@ it('the side panel floats over the calendar instead of taking width from it', as
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: /all meetings on .*24/i })); });
   expect(screen.getByRole('complementary', { name: 'Day' }).style.position).toBe('absolute');
 });
+
+it('the event panel renders the transcript summary as markdown', async () => {
+  await mount(shared, [{ id: 't', createdAt: '2026-09-24T08:00:00.000Z', ingestedAt: '2026-09-24T09:10:00.000Z',
+    markdown: '## Summary\n\n## Итоги\n\n*   **Technical Updates:**\n    *   SEO removals\n\n## Transcript\n**Me**: hi',
+    metadata: { meetingId: 'm1', calendarEvent: { occurrenceKey: 'K' } } }]);
+  await act(async () => { fireEvent.click(await screen.findByText('Design review')); });
+  const section = screen.getByRole('region', { name: 'Linked transcript' });
+  expect(within(section).getByText('Technical Updates:').tagName).toBe('STRONG');
+  expect(within(section).getByText('SEO removals')).toBeTruthy();
+  expect(section.textContent).not.toContain('**');
+  expect(section.textContent).not.toContain('hi');
+});

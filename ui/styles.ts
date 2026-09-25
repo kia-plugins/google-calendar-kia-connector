@@ -118,5 +118,4 @@ export const s: Styles = {
   },
   transcript: { border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', background: 'var(--accent-subtle)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 },
   sectionLabel: { fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' },
-  list: { margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 },
 };

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { summaryLines, type Occurrence, type TranscriptDoc } from './data';
+import { summarySection, type Occurrence, type TranscriptDoc } from './data';
+import { Markdown } from './markdown';
 import { FALLBACK_COLOR } from './format';
 import { s } from './styles';
 
@@ -41,7 +42,7 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back }: Pro
 
   const m = occ.primary.metadata;
   const upcoming = Date.parse(m.end) > Date.now();
-  const lines = transcript ? summaryLines(transcript.markdown, 5) : [];
+  const summary = transcript ? summarySection(transcript.markdown) : '';
 
   return (
     <aside aria-label="Event details" style={s.panel}>
@@ -77,11 +78,7 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back }: Pro
         {transcript && (
           <section aria-label="Linked transcript" style={s.transcript}>
             <span style={s.sectionLabel}>Transcript</span>
-            {lines.length > 0 && (
-              <ul style={s.list}>
-                {lines.map((l, i) => <li key={i}>{l.replace(/^[-*]\s+/, '')}</li>)}
-              </ul>
-            )}
+            {summary && <Markdown source={summary} />}
             <button
               type="button"
               style={{ ...s.btn, alignSelf: 'flex-start' }}

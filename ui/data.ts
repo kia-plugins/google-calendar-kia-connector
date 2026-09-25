@@ -118,11 +118,13 @@ export function transcriptIndex(ts: TranscriptDoc[]): Map<string, TranscriptDoc>
   return m;
 }
 
-export function summaryLines(markdown: string | null, n: number): string[] {
-  if (!markdown) return [];
+/** The transcript's summary: everything between `## Summary` and
+ *  `## Transcript`. A summary may carry its own `##` headings. */
+export function summarySection(markdown: string | null): string {
+  if (!markdown) return '';
   const after = markdown.split(/^## Summary\s*$/m)[1];
-  if (!after) return [];
-  return after.split(/^## /m)[0].split('\n').map((l) => l.trim()).filter(Boolean).slice(0, n);
+  if (after === undefined) return '';
+  return after.split(/^## Transcript\s*$/m)[0].trim();
 }
 
 export interface Placed { occ: Occurrence; lane: number; lanes: number }

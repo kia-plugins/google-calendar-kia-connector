@@ -1,4 +1,4 @@
-import { joinOccurrences, layoutLanes, mergeTranscripts, onDay, monthRange, overlaps, searchAll, summaryLines, transcriptIndex, weekRange, type EventDoc, type TranscriptDoc } from '../data';
+import { joinOccurrences, layoutLanes, mergeTranscripts, onDay, monthRange, overlaps, searchAll, summarySection, transcriptIndex, weekRange, type EventDoc, type TranscriptDoc } from '../data';
 
 const e = (id: string, key: string, cal: string, start: string, end: string): EventDoc => ({
   id, accountId: 'a', title: id,
@@ -69,9 +69,13 @@ it('transcriptIndex keys by occurrenceKey', () => {
   expect(idx.size).toBe(1);
 });
 
-it('summaryLines returns the first lines under ## Summary', () => {
-  expect(summaryLines('# T\n\n## Summary\n- a\n- b\n- c\n\n## Transcript\nx', 2)).toEqual(['- a', '- b']);
-  expect(summaryLines(null, 2)).toEqual([]);
+it('summarySection is everything between ## Summary and ## Transcript', () => {
+  expect(summarySection('# T\n\n## Summary\n- a\n- b\n\n## Transcript\nx')).toBe('- a\n- b');
+  // A summary may carry its own ## heading; only ## Transcript ends it.
+  expect(summarySection('## Summary\n\n## Підсумки\n\n* a\n\n## Transcript\n**Me**: hi')).toBe('## Підсумки\n\n* a');
+  expect(summarySection('## Summary\nonly')).toBe('only');
+  expect(summarySection(null)).toBe('');
+  expect(summarySection('no summary here')).toBe('');
 });
 
 const allDay = (id: string, startDate: string, endDate: string): EventDoc => {
