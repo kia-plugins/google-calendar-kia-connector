@@ -62,7 +62,7 @@ export const s: Styles = {
 
   dayHeads: { display: 'flex', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 },
   gutter: { width: 52, flexShrink: 0 },
-  dayHead: { flex: '1 1 0', minWidth: 0, padding: '10px 10px 8px', borderLeft: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'baseline', gap: 6 },
+  dayHead: { flex: '1 1 0', minWidth: 0, overflow: 'hidden', padding: '10px 8px 8px', borderLeft: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'baseline', gap: 6 },
   dow: { fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' },
   dayNum: { fontSize: 18, fontWeight: 600, fontVariantNumeric: 'tabular-nums', padding: '0 5px', borderRadius: 'var(--radius-sm)' },
   allDayRow: { display: 'flex', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, minHeight: 30 },
@@ -100,7 +100,7 @@ export const s: Styles = {
     fontFamily: 'inherit', fontSize: 12, textAlign: 'left', cursor: 'pointer',
   },
   dayRowTime: { width: 92, flexShrink: 0, fontSize: 11, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' },
-  dayLink: { border: 0, background: 'transparent', padding: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 6 },
+  dayLink: { border: 0, background: 'transparent', padding: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0, whiteSpace: 'nowrap' },
 
   panel: {
     width: 372, flexShrink: 0, borderLeft: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)',
