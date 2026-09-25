@@ -73,7 +73,7 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back, accou
           {m.location && <span>{m.location}</span>}
         </div>
         {m.conferenceUrl && upcoming && (
-          <a href={m.conferenceUrl} target="_blank" rel="noreferrer" style={s.join}>Join</a>
+          <a href={withAuthUser(m.conferenceUrl, account)} target="_blank" rel="noreferrer" style={s.join}>Join</a>
         )}
       </div>
       <div style={s.panelBody}>

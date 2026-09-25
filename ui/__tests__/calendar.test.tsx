@@ -132,3 +132,19 @@ it('Open in Google signs in as the account the event came from', async () => {
   expect(u.searchParams.get('eid')).toBe('abc');
   expect(u.searchParams.get('authuser')).toBe('me@home.com');
 });
+
+it('Join opens Meet as the account the event came from; other links stay as they are', async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-24T13:00:00.000Z'));
+  const meet = { ...ev('9', 'B', 'home', 'Z', '2026-09-24T14:00:00.000Z', '2026-09-24T15:00:00.000Z'), title: 'Meet thing' };
+  meet.metadata = { ...meet.metadata, conferenceUrl: 'https://meet.google.com/abc-defg-hij' } as any;
+  const zoom = { ...ev('8', 'B', 'home', 'Y', '2026-09-24T16:00:00.000Z', '2026-09-24T17:00:00.000Z'), title: 'Zoom thing' };
+  zoom.metadata = { ...zoom.metadata, conferenceUrl: 'https://zoom.us/j/123?pwd=x' } as any;
+  await mount([meet, zoom]);
+  await act(async () => { fireEvent.click(await screen.findByText('Meet thing')); });
+  const join = new URL((screen.getByRole('link', { name: 'Join' }) as HTMLAnchorElement).href);
+  expect(join.host).toBe('meet.google.com');
+  expect(join.searchParams.get('authuser')).toBe('me@home.com');
+  await act(async () => { fireEvent.click(screen.getByText('Zoom thing')); });
+  expect((screen.getByRole('link', { name: 'Join' }) as HTMLAnchorElement).href).toBe('https://zoom.us/j/123?pwd=x');
+  (Date.now as jest.Mock).mockRestore();
+});

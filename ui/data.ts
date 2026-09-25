@@ -156,11 +156,15 @@ export function layoutLanes(occs: Occurrence[]): Placed[] {
 }
 
 /** A Google link opened as a given account (`authuser` takes an email), so
- *  a browser signed into several Google accounts shows the right one. */
+ *  a browser signed into several Google accounts shows the right one. Only
+ *  Calendar and Meet links change; `www.google.com/calendar` redirects and
+ *  drops the account on the way, so it goes straight to calendar.google.com. */
 export function withAuthUser(url: string, email: string | undefined): string {
   if (!email) return url;
   try {
     const u = new URL(url);
+    if (u.host === 'www.google.com' && u.pathname.startsWith('/calendar')) u.host = 'calendar.google.com';
+    if (u.host !== 'calendar.google.com' && u.host !== 'meet.google.com') return url;
     u.searchParams.set('authuser', email);
     return u.toString();
   } catch {

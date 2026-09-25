@@ -112,11 +112,17 @@ it('layoutLanes splits overlapping occurrences and resets after a gap', () => {
   expect(placed.map((p) => [p.occ.key, p.lane, p.lanes])).toEqual([['a', 0, 2], ['b', 1, 2], ['c', 0, 2], ['d', 0, 1]]);
 });
 
-it('withAuthUser sets the account on a Google link and leaves bad input alone', () => {
+it('withAuthUser opens a Google link as the account and leaves other links alone', () => {
+  // www.google.com/calendar redirects and drops the account on the way;
+  // calendar.google.com honours it.
   expect(withAuthUser('https://www.google.com/calendar/event?eid=x', 'a@b.com'))
-    .toBe('https://www.google.com/calendar/event?eid=x&authuser=a%40b.com');
-  expect(withAuthUser('https://www.google.com/calendar/event?eid=x&authuser=0', 'a@b.com'))
-    .toBe('https://www.google.com/calendar/event?eid=x&authuser=a%40b.com');
+    .toBe('https://calendar.google.com/calendar/event?eid=x&authuser=a%40b.com');
+  expect(withAuthUser('https://calendar.google.com/calendar/event?eid=x&authuser=0', 'a@b.com'))
+    .toBe('https://calendar.google.com/calendar/event?eid=x&authuser=a%40b.com');
+  expect(withAuthUser('https://meet.google.com/abc-defg-hij', 'a@b.com'))
+    .toBe('https://meet.google.com/abc-defg-hij?authuser=a%40b.com');
+  expect(withAuthUser('https://zoom.us/j/1?pwd=x', 'a@b.com')).toBe('https://zoom.us/j/1?pwd=x');
+  expect(withAuthUser('https://www.google.com/search?q=x', 'a@b.com')).toBe('https://www.google.com/search?q=x');
   expect(withAuthUser('https://x.test/e', undefined)).toBe('https://x.test/e');
   expect(withAuthUser('not a url', 'a@b.com')).toBe('not a url');
 });
