@@ -33,7 +33,7 @@ export const s: Styles = {
     height: 28, padding: '0 12px', border: 0, background: 'var(--accent-subtle)', color: 'var(--accent-text)',
     fontSize: 12, fontWeight: 600, cursor: 'pointer',
   },
-  body: { flex: 1, display: 'flex', minHeight: 0 },
+  body: { flex: 1, display: 'flex', minHeight: 0, position: 'relative' },
   main: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)' },
 
   rail: {
@@ -102,8 +102,10 @@ export const s: Styles = {
   dayRowTime: { width: 92, flexShrink: 0, fontSize: 11, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' },
   dayLink: { border: 0, background: 'transparent', padding: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0, whiteSpace: 'nowrap' },
 
+  // Floats over the grid's right edge so opening it never narrows the calendar.
   panel: {
-    width: 372, flexShrink: 0, borderLeft: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)',
+    position: 'absolute', top: 0, right: 0, bottom: 0, zIndex: 10,
+    width: 372, borderLeft: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)',
     boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', overflowY: 'auto',
   },
   panelHead: { padding: '20px 22px 16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: 10 },

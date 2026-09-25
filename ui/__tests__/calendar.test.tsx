@@ -99,3 +99,13 @@ it('month view: clicking a date opens that day', async () => {
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: /all meetings on .*24/i })); });
   expect(within(screen.getByRole('complementary', { name: 'Day' })).getByText('Design review')).toBeTruthy();
 });
+
+it('the side panel floats over the calendar instead of taking width from it', async () => {
+  await mount(shared);
+  await act(async () => { fireEvent.click(await screen.findByText('Design review')); });
+  const panel = screen.getByRole('complementary', { name: 'Event details' });
+  expect(panel.style.position).toBe('absolute');
+  expect(panel.parentElement?.style.position).toBe('relative');
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: /all meetings on .*24/i })); });
+  expect(screen.getByRole('complementary', { name: 'Day' }).style.position).toBe('absolute');
+});
