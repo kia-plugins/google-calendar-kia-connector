@@ -1,12 +1,14 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import CalendarPage from '../calendar';
+import CalendarPage, { __resetMemo } from '../calendar';
 
 const ev = (id: string, acc: string, cal: string, key: string, start: string, end: string) => ({
   id, accountId: acc, title: 'Design review', metadata: { calendarId: cal, calendarName: cal, calendarColor: '#4285f4',
     occurrenceKey: key, start, end, allDay: false, selfResponse: 'accepted', attendees: [], conferenceUrl: null, location: null } });
 
-async function mount(events: any[], transcripts: any[] = [], accounts?: any[]) {
+async function mount(events: any[], transcripts: any[] = [], accounts?: any[], hold?: (ch: string, q: any) => boolean) {
   const invoke = jest.fn(async (ch: string, q: any) => {
+    if (hold?.(ch, q)) return new Promise(() => {}); // never answers
+
     // The real channel answers with the {state, seq, rev} envelope.
     if (ch === 'app:get-state') return { seq: 1, rev: 1, state: { accounts: accounts ?? [
       { account: { id: 'A', source: 'google-calendar', identifier: 'me@work.com', config: { folderRoots: [{ id: 'work', name: 'Work' }] } } },
@@ -29,8 +31,9 @@ async function mount(events: any[], transcripts: any[] = [], accounts?: any[]) {
   return { invoke, navigate, ...view };
 }
 
-// Hidden calendars persist in localStorage; no test may inherit another's.
-beforeEach(() => localStorage.clear());
+// Hidden calendars persist in localStorage and the page memo outlives a
+// mount; no test may inherit another's.
+beforeEach(() => { localStorage.clear(); __resetMemo(); });
 
 const shared = [
   ev('1', 'A', 'work', 'K', '2026-09-24T08:00:00.000Z', '2026-09-24T09:00:00.000Z'),
@@ -165,4 +168,17 @@ it("the transcript card shows the meeting's length, and none for a record withou
   await mount(shared, doc(undefined));
   await act(async () => { fireEvent.click(await screen.findByText('Design review')); });
   expect(within(screen.getByRole('region', { name: 'Linked transcript' })).queryByText(/ min$/)).toBeNull();
+});
+
+it('events paint without waiting for the transcripts query', async () => {
+  await mount(shared, [], undefined, (ch, q) => ch === 'search:query' && q.type === 'meeting.transcript');
+  expect(screen.getAllByText('Design review')).toHaveLength(1);
+});
+
+it('a revisit paints the last events at once, before any query answers', async () => {
+  const first = await mount(shared);
+  first.unmount();
+  await mount([], [], undefined, () => true);
+  expect(screen.getAllByText('Design review')).toHaveLength(1);
+  expect(screen.getByLabelText('Work')).toBeTruthy(); // the rail's calendars too
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   joinOccurrences, LOOKBACK_MS, mergeTranscripts, monthRange, overlaps, searchAll, transcriptIndex, weekRange,
   type EventDoc, type Invoke, type Occurrence, type TranscriptDoc,
@@ -21,6 +21,30 @@ interface AppState {
       account: { id: string; source: string; identifier: string; config?: { folderRoots?: { id: string; name: string }[] } };
     }>;
   };
+}
+
+/** What the page last showed, kept at module level: the host caches this
+ *  module across visits but not the component, so without it every visit
+ *  paints an empty grid until the queries answer. Revisits paint at once
+ *  and refresh behind it. Events are kept per visible range (a few). */
+const memo = {
+  events: new Map<string, EventDoc[]>(),
+  accounts: [] as RailAccount[],
+  transcripts: [] as TranscriptDoc[],
+  transcriptsLoaded: false,
+};
+const MEMO_RANGES = 12;
+function remember(key: string, evs: EventDoc[]) {
+  memo.events.delete(key);
+  memo.events.set(key, evs);
+  if (memo.events.size > MEMO_RANGES) memo.events.delete(memo.events.keys().next().value!);
+}
+/** Test-only. */
+export function __resetMemo() {
+  memo.events.clear();
+  memo.accounts = [];
+  memo.transcripts = [];
+  memo.transcriptsLoaded = false;
 }
 
 function loadHidden(): Set<string> {
@@ -47,49 +71,68 @@ export default function CalendarPage({ params, navigate }: {
   const [view, setView] = useState<'week' | 'month'>('week');
   const [cursor, setCursor] = useState(() => (params.date ? new Date(`${params.date}T12:00:00`) : new Date()));
   const [events, setEvents] = useState<EventDoc[]>([]);
-  const [transcripts, setTranscripts] = useState<TranscriptDoc[]>([]);
-  const [accounts, setAccounts] = useState<RailAccount[]>([]);
+  const [transcripts, setTranscripts] = useState<TranscriptDoc[]>(() => memo.transcripts);
+  const [accounts, setAccounts] = useState<RailAccount[]>(() => memo.accounts);
   const [hidden, setHidden] = useState<Set<string>>(loadHidden);
   const [selected, setSelected] = useState<Occurrence | null>(null);
   const [day, setDay] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const transcriptsLoaded = useRef(false);
   const seq = useRef(0);
   const range = view === 'week' ? weekRange(cursor) : monthRange(cursor);
   const startMs = range.start.getTime();
   const endMs = range.end.getTime();
 
+  const rangeKey = `${startMs}/${endMs}`;
+  // A range seen before shows its last events while the refresh runs.
+  useLayoutEffect(() => { setEvents(memo.events.get(rangeKey) ?? []); }, [rangeKey]);
+
   const refresh = useCallback(async () => {
     const mine = ++seq.current;
+    const current = () => mine === seq.current; // a newer range supersedes this fetch
     const start = new Date(startMs);
     const end = new Date(endMs);
     const from = new Date(startMs - LOOKBACK_MS);
     const q = { fromDate: from.toISOString(), toDate: end.toISOString() };
+    // All three go out together; the grid paints as soon as the events are
+    // in and never waits on transcripts, which only add badges.
+    // First load: every transcript once; afterwards only the visible slice.
+    const whole = !memo.transcriptsLoaded;
+    // Settled up front, so a failure here can't go unhandled while the
+    // events are still being awaited.
+    const tFetch = searchAll<TranscriptDoc>(invoke, whole ? { type: 'meeting.transcript' } : { type: 'meeting.transcript', ...q })
+      .then((docs) => ({ docs }), (err: unknown) => ({ err }));
+    const eFetch = Promise.all([
+      searchAll<EventDoc>(invoke, { type: 'calendar.event', ...q }),
+      invoke('app:get-state', undefined) as Promise<AppState>,
+    ]);
     try {
-      const [evs, state] = await Promise.all([
-        searchAll<EventDoc>(invoke, { type: 'calendar.event', ...q }),
-        invoke('app:get-state', undefined) as Promise<AppState>,
-      ]);
-      // First load: every transcript once; afterwards only the visible slice.
-      const fresh = await searchAll<TranscriptDoc>(invoke, transcriptsLoaded.current
-        ? { type: 'meeting.transcript', ...q }
-        : { type: 'meeting.transcript' });
-      if (mine !== seq.current) return; // a newer range superseded this fetch
-      setEvents(evs.filter((e) => overlaps(e, start, end)));
-      const colorOf = (id: string, i: number) =>
-        evs.find((e) => e.metadata.calendarId === id)?.metadata.calendarColor ?? PALETTE[i % PALETTE.length];
-      setAccounts(state.state.accounts.filter((a) => a.account.source === 'google-calendar').map((a) => ({
-        accountId: a.account.id,
-        identifier: a.account.identifier,
-        calendars: (a.account.config?.folderRoots ?? []).map((r, i) => ({ id: r.id, name: r.name, color: colorOf(r.id, i) })),
-      })));
-      setTranscripts((prev) => (transcriptsLoaded.current ? mergeTranscripts(prev, fresh, from, end) : fresh));
-      transcriptsLoaded.current = true;
-      setError(null);
+      const [evs, state] = await eFetch;
+      if (current()) {
+        const visible = evs.filter((e) => overlaps(e, start, end));
+        remember(rangeKey, visible);
+        setEvents(visible);
+        const colorOf = (id: string, i: number) =>
+          evs.find((e) => e.metadata.calendarId === id)?.metadata.calendarColor ?? PALETTE[i % PALETTE.length];
+        memo.accounts = state.state.accounts.filter((a) => a.account.source === 'google-calendar').map((a) => ({
+          accountId: a.account.id,
+          identifier: a.account.identifier,
+          calendars: (a.account.config?.folderRoots ?? []).map((r, i) => ({ id: r.id, name: r.name, color: colorOf(r.id, i) })),
+        }));
+        setAccounts(memo.accounts);
+        setError(null);
+      }
     } catch (err) {
-      if (mine === seq.current) setError(err instanceof Error ? err.message : String(err));
+      if (current()) setError(err instanceof Error ? err.message : String(err));
     }
-  }, [startMs, endMs]);
+    const t = await tFetch;
+    if ('err' in t) {
+      if (current()) setError(t.err instanceof Error ? t.err.message : String(t.err));
+      return;
+    }
+    memo.transcripts = whole ? t.docs : mergeTranscripts(memo.transcripts, t.docs, from, end);
+    memo.transcriptsLoaded = true;
+    if (current()) setTranscripts(memo.transcripts);
+  }, [startMs, endMs, rangeKey]);
 
   useEffect(() => {
     void refresh();
