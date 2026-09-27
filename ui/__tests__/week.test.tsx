@@ -77,3 +77,35 @@ test('month view marks a transcript with the mic icon too', () => {
   expect(screen.getByLabelText('Has transcript').tagName.toLowerCase()).toBe('svg');
   expect(document.body.textContent).not.toContain('●');
 });
+
+test('the open event is marked and filled with its calendar color', () => {
+  render(
+    <Week
+      days={[day]}
+      occurrences={[occ('a', 'Planning', at(10, 0), at(11, 0)), occ('b', 'Review', at(12, 0), at(13, 0))]}
+      transcripts={new Map()}
+      selectedKey="a"
+      onSelect={() => {}}
+      onPickDay={() => {}}
+    />,
+  );
+  expect(box('Planning').getAttribute('aria-current')).toBe('true');
+  expect(box('Planning').style.background).toBe('rgb(232, 113, 10)');
+  expect(box('Review').getAttribute('aria-current')).toBeNull();
+});
+
+test('month view marks the open event too', () => {
+  render(
+    <Month
+      grid={[day]}
+      month={8}
+      occurrences={[occ('a', 'Planning', at(10, 0), at(11, 0)), occ('b', 'Review', at(12, 0), at(13, 0))]}
+      transcripts={new Map()}
+      selectedKey="a"
+      onSelect={() => {}}
+      onPickDay={() => {}}
+    />,
+  );
+  expect(box('Planning').getAttribute('aria-current')).toBe('true');
+  expect(box('Review').getAttribute('aria-current')).toBeNull();
+});

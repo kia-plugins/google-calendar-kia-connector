@@ -3,12 +3,14 @@ import { layoutLanes, minutesOnDay, onDay, type Occurrence, type TranscriptDoc }
 import { FALLBACK_COLOR, sameDay, time } from './format';
 import { dayLabel } from './day';
 import { MicIcon } from './icons';
-import { HOUR_PX, s, tint } from './styles';
+import { HOUR_PX, picked, s, tint } from './styles';
 
 interface Props {
   days: Date[];
   occurrences: Occurrence[];
   transcripts: Map<string, TranscriptDoc>;
+  /** The event whose details are open. */
+  selectedKey?: string;
   onSelect(o: Occurrence): void;
   onPickDay(d: Date): void;
 }
@@ -27,7 +29,7 @@ function colorOf(o: Occurrence): string {
   return o.primary.metadata.calendarColor ?? FALLBACK_COLOR;
 }
 
-export function Week({ days, occurrences, transcripts, onSelect, onPickDay }: Props) {
+export function Week({ days, occurrences, transcripts, selectedKey, onSelect, onPickDay }: Props) {
   const scroller = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -67,7 +69,13 @@ export function Week({ days, occurrences, transcripts, onSelect, onPickDay }: Pr
               <button
                 key={o.key}
                 type="button"
-                style={{ ...s.chip, background: tint(colorOf(o)), borderLeft: `3px solid ${colorOf(o)}` }}
+                aria-current={o.key === selectedKey || undefined}
+                style={{
+                  ...s.chip,
+                  background: tint(colorOf(o)),
+                  borderLeft: `3px solid ${colorOf(o)}`,
+                  ...(o.key === selectedKey ? picked(colorOf(o)) : {}),
+                }}
                 onClick={() => onSelect(o)}
               >
                 {o.primary.title ?? '(no title)'}
@@ -97,10 +105,12 @@ export function Week({ days, occurrences, transcripts, onSelect, onPickDay }: Pr
                   const size = sizing(height);
                   const color = colorOf(occ);
                   const declined = m.selfResponse === 'declined';
+                  const isPicked = occ.key === selectedKey;
                   return (
                     <button
                       key={occ.key}
                       type="button"
+                      aria-current={isPicked || undefined}
                       onClick={() => onSelect(occ)}
                       style={{
                         ...s.event,
@@ -114,6 +124,7 @@ export function Week({ days, occurrences, transcripts, onSelect, onPickDay }: Pr
                         borderStyle: 'solid',
                         borderColor: `${tint(color, 60)} ${tint(color, 60)} ${tint(color, 60)} ${color}`,
                         ...(declined ? s.eventDeclined : {}),
+                        ...(isPicked ? picked(color) : {}),
                       }}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
@@ -128,9 +139,9 @@ export function Week({ days, occurrences, transcripts, onSelect, onPickDay }: Pr
                         >
                           {occ.primary.title ?? '(no title)'}
                         </span>
-                        {transcripts.has(occ.key) && <MicIcon size={size.mic} />}
+                        {transcripts.has(occ.key) && <MicIcon size={size.mic} color={isPicked ? 'currentColor' : undefined} />}
                       </span>
-                      {size.time && <span style={s.eventTime}>{`${time(m.start)} – ${time(m.end)}`}</span>}
+                      {size.time && <span style={{ ...s.eventTime, ...(isPicked ? { color: 'inherit', opacity: 0.85 } : {}) }}>{`${time(m.start)} – ${time(m.end)}`}</span>}
                     </button>
                   );
                 })}

@@ -1,5 +1,5 @@
 /** Marks an event that has a meeting transcript. */
-export function MicIcon({ size = 11 }: { size?: number }) {
+export function MicIcon({ size = 11, color = 'var(--accent-text)' }: { size?: number; color?: string }) {
   return (
     <svg
       role="img"
@@ -12,7 +12,7 @@ export function MicIcon({ size = 11 }: { size?: number }) {
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ flexShrink: 0, color: 'var(--accent-text)', marginLeft: 3 }}
+      style={{ flexShrink: 0, color, marginLeft: 3 }}
     >
       <rect x="9" y="3" width="6" height="11" rx="3" />
       <path d="M5 11a7 7 0 0 0 14 0" />

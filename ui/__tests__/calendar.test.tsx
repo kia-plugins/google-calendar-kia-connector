@@ -95,6 +95,21 @@ it('clicking a day lists all its meetings; one opens its details and Back return
   expect(screen.getByRole('complementary', { name: 'Day' })).toBeTruthy();
 });
 
+it('the event whose details are open stays marked on the grid, in the day list too', async () => {
+  const dentist = { ...ev('3', 'B', 'home', 'L', '2026-09-24T12:00:00.000Z', '2026-09-24T13:00:00.000Z'), title: 'Dentist' };
+  await mount([...shared, dentist]);
+  const onGrid = () => screen.getByText('Dentist', { selector: 'main *' }).closest('button') as HTMLElement;
+  expect(onGrid().getAttribute('aria-current')).toBeNull();
+  await act(async () => { fireEvent.click(onGrid()); });
+  expect(onGrid().getAttribute('aria-current')).toBe('true');
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: /all meetings on .*24/i })); });
+  const panel = screen.getByRole('complementary', { name: 'Day' });
+  await act(async () => { fireEvent.click(within(panel).getByText('Dentist')); });
+  expect(onGrid().getAttribute('aria-current')).toBe('true');
+  await act(async () => { fireEvent.click(within(screen.getByRole('complementary', { name: 'Event details' })).getByRole('button', { name: 'Close' })); });
+  expect(onGrid().getAttribute('aria-current')).toBeNull();
+});
+
 it('month view: clicking a date opens that day', async () => {
   await mount(shared);
   await screen.findByText('Design review');

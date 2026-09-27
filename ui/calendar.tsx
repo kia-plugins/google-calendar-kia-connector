@@ -194,8 +194,8 @@ export default function CalendarPage({ params, navigate }: {
         <Rail cursor={cursor} accounts={accounts} hidden={hidden} onToggle={toggle} onPick={setCursor} onManage={() => navigate('sources')} />
         <main style={s.main}>
           {view === 'week'
-            ? <Week days={days} occurrences={occurrences} transcripts={tIndex} onSelect={pickEvent} onPickDay={pickDay} />
-            : <Month grid={days} month={cursor.getMonth()} occurrences={occurrences} transcripts={tIndex} onSelect={pickEvent} onPickDay={pickDay} />}
+            ? <Week days={days} occurrences={occurrences} transcripts={tIndex} selectedKey={current?.key} onSelect={pickEvent} onPickDay={pickDay} />
+            : <Month grid={days} month={cursor.getMonth()} occurrences={occurrences} transcripts={tIndex} selectedKey={current?.key} onSelect={pickEvent} onPickDay={pickDay} />}
         </main>
         {current ? (
           <Detail

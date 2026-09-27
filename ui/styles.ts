@@ -8,6 +8,13 @@ export const HOUR_PX = 60;
  *  light and dark themes. */
 export const tint = (color: string, pct = 16): string => `color-mix(in srgb, ${color} ${pct}%, var(--bg-surface))`;
 
+/** The event whose details are open: filled with its calendar colour and
+ *  lifted, so the grid shows which one the panel is about. */
+export const picked = (color: string): CSSProperties => ({
+  background: color, borderColor: color, color: '#fff', opacity: 1, zIndex: 2,
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.28)',
+});
+
 export const s: Styles = {
   page: {
     display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-app)',
