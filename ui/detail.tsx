@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { summarySection, withAuthUser, type Occurrence, type TranscriptDoc } from './data';
+import { Guest } from './guest';
 import { Markdown } from './markdown';
 import { FALLBACK_COLOR } from './format';
 import { s } from './styles';
@@ -103,10 +104,7 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back, accou
           <section aria-label="Guests" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span className="ui-card-lbl">{`Guests · ${m.attendees.length}`}</span>
             {m.attendees.map((a) => (
-              <div key={a.email} style={{ display: 'flex', gap: 8, fontSize: 13, padding: '4px 0' }}>
-                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name ?? a.email}</span>
-                <span style={{ color: 'var(--text-tertiary)' }}>{a.response ? RESPONSE[a.response] ?? a.response : ''}</span>
-              </div>
+              <Guest key={a.email} name={a.name} email={a.email} response={a.response ? RESPONSE[a.response] ?? a.response : ''} />
             ))}
           </section>
         )}
