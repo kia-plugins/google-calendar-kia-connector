@@ -121,18 +121,20 @@ export default function CalendarPage({ params, navigate }: {
 
   return (
     <div style={s.page}>
+      {/* The host paints the page title in its top bar; the toolbar leads the page. */}
       <div style={s.toolbar}>
-        <h1 style={s.title}>Calendar</h1>
-        <span style={s.divider} />
-        <button type="button" style={s.btn} onClick={() => setCursor(new Date())}>Today</button>
-        <button type="button" style={s.btn} aria-label="Previous" onClick={() => step(-1)}>‹</button>
-        <button type="button" style={s.btn} aria-label="Next" onClick={() => step(1)}>›</button>
-        <span style={s.range}>{rangeLabel(view, range.start, cursor)}</span>
+        <button type="button" className="ui-btn" onClick={() => setCursor(new Date())}>Today</button>
+        <button type="button" className="ui-btn is-ghost ui-ibtn" aria-label="Previous" onClick={() => step(-1)}>‹</button>
+        <button type="button" className="ui-btn is-ghost ui-ibtn" aria-label="Next" onClick={() => step(1)}>›</button>
+        <h2 style={s.range}>{rangeLabel(view, range.start, cursor)}</h2>
         <div style={{ flex: 1 }} />
         {error && <span role="status" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{`Couldn't refresh: ${error}`}</span>}
-        <div role="group" aria-label="View" style={s.segment}>
-          <button type="button" aria-pressed={view === 'week'} style={view === 'week' ? s.segOn : s.seg} onClick={() => setView('week')}>Week</button>
-          <button type="button" aria-pressed={view === 'month'} style={view === 'month' ? s.segOn : s.seg} onClick={() => setView('month')}>Month</button>
+        <div role="group" aria-label="View" className="ui-seg">
+          {(['week', 'month'] as const).map((v) => (
+            <button key={v} type="button" aria-pressed={view === v} className={view === v ? 'ui-seg-i is-on' : 'ui-seg-i'} onClick={() => setView(v)}>
+              {v === 'week' ? 'Week' : 'Month'}
+            </button>
+          ))}
         </div>
       </div>
       <div style={s.body}>

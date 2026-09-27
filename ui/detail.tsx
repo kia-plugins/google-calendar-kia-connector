@@ -35,6 +35,12 @@ function when(m: Occurrence['primary']['metadata']): string {
   return `${day} · ${t(a)} – ${t(b)}`;
 }
 
+/** "48 min" from the meeting's recorded length; older records carry none. */
+export function meetingLength(ms: number | undefined): string | null {
+  if (typeof ms !== 'number' || !(ms > 0)) return null;
+  return `${Math.max(1, Math.round(ms / 60_000))} min`;
+}
+
 export function Detail({ occ, transcript, onClose, onOpenTranscript, back, account }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -45,12 +51,13 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back, accou
   const m = occ.primary.metadata;
   const upcoming = Date.parse(m.end) > Date.now();
   const summary = transcript ? summarySection(transcript.markdown) : '';
+  const length = meetingLength(transcript?.metadata.durationMs);
 
   return (
     <aside aria-label="Event details" style={s.panel}>
       <div style={s.panelHead}>
         {back && (
-          <button type="button" aria-label={`Back to ${back.label}`} style={{ ...s.iconBtn, alignSelf: 'flex-start', padding: 0, color: 'var(--accent-text)' }} onClick={back.onBack}>
+          <button type="button" aria-label={`Back to ${back.label}`} className="ui-link" style={{ alignSelf: 'flex-start' }} onClick={back.onBack}>
             {`‹ ${back.label}`}
           </button>
         )}
@@ -60,9 +67,9 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back, accou
             {occ.copies.map((c) => c.metadata.calendarName).join(' · ')}
           </span>
           {occ.primary.url && (
-            <a href={withAuthUser(occ.primary.url, account)} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: 'var(--accent-text)', textDecoration: 'none' }}>Open in Google</a>
+            <a href={withAuthUser(occ.primary.url, account)} target="_blank" rel="noreferrer" className="ui-link">Open in Google</a>
           )}
-          <button type="button" style={s.iconBtn} aria-label="Close" onClick={onClose}>✕</button>
+          <button type="button" className="ui-btn is-ghost is-sm ui-ibtn" aria-label="Close" onClick={onClose}>✕</button>
         </div>
         <h2 style={s.panelTitle}>{occ.primary.title ?? '(no title)'}</h2>
         {occ.copies.length > 1 && (
@@ -73,17 +80,19 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back, accou
           {m.location && <span>{m.location}</span>}
         </div>
         {m.conferenceUrl && upcoming && (
-          <a href={withAuthUser(m.conferenceUrl, account)} target="_blank" rel="noreferrer" style={s.join}>Join</a>
+          <a href={withAuthUser(m.conferenceUrl, account)} target="_blank" rel="noreferrer" className="ui-btn is-primary" style={{ textDecoration: 'none' }}>Join</a>
         )}
       </div>
       <div style={s.panelBody}>
         {transcript && (
-          <section aria-label="Linked transcript" style={s.transcript}>
-            <span style={s.sectionLabel}>Transcript</span>
+          <section aria-label="Linked transcript" className="ui-card" style={s.transcript}>
+            <span className="ui-card-lbl">Transcript</span>
             {summary && <Markdown source={summary} />}
+            {length && <span style={s.transcriptMeta}>{length}</span>}
             <button
               type="button"
-              style={{ ...s.btn, alignSelf: 'flex-start' }}
+              className="ui-btn is-primary is-sm"
+              style={{ alignSelf: 'flex-start' }}
               onClick={() => transcript.metadata.meetingId && onOpenTranscript(transcript.metadata.meetingId)}
             >
               Open transcript
@@ -92,9 +101,9 @@ export function Detail({ occ, transcript, onClose, onOpenTranscript, back, accou
         )}
         {m.attendees.length > 0 && (
           <section aria-label="Guests" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={s.sectionLabel}>{`Guests · ${m.attendees.length}`}</span>
+            <span className="ui-card-lbl">{`Guests · ${m.attendees.length}`}</span>
             {m.attendees.map((a) => (
-              <div key={a.email} style={{ display: 'flex', gap: 8, fontSize: 12 }}>
+              <div key={a.email} style={{ display: 'flex', gap: 8, fontSize: 13, padding: '4px 0' }}>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name ?? a.email}</span>
                 <span style={{ color: 'var(--text-tertiary)' }}>{a.response ? RESPONSE[a.response] ?? a.response : ''}</span>
               </div>

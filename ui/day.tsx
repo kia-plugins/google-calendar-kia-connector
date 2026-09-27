@@ -34,7 +34,7 @@ export function DayPanel({ day, occurrences, transcripts, onSelect, onClose }: P
       <div style={s.panelHead}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <h2 style={{ ...s.panelTitle, flex: 1 }}>{dayLabel(day)}</h2>
-          <button type="button" style={s.iconBtn} aria-label="Close" onClick={onClose}>✕</button>
+          <button type="button" className="ui-btn is-ghost is-sm ui-ibtn" aria-label="Close" onClick={onClose}>✕</button>
         </div>
         <span style={s.meta}>{items.length === 1 ? '1 meeting' : `${items.length} meetings`}</span>
       </div>

@@ -13,52 +13,31 @@ export const s: Styles = {
     display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-app)',
     color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', fontSize: 13,
   },
-  toolbar: {
-    height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px',
-    borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)',
+  // Buttons and the Week/Month switch are the host's ui- classes; these
+  // objects only lay the page out.
+  toolbar: { height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '0 24px' },
+  range: { margin: '0 0 0 8px', fontSize: 15, fontWeight: 600, letterSpacing: '-0.005em' },
+  body: { flex: 1, display: 'flex', minHeight: 0, position: 'relative', padding: '0 24px 24px', gap: 24 },
+  main: {
+    flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
   },
-  title: { margin: 0, fontSize: 17, fontWeight: 600, letterSpacing: '-0.01em' },
-  divider: { width: 1, height: 20, background: 'var(--border-subtle)', margin: '0 6px' },
-  range: { fontSize: 14, fontWeight: 600, marginLeft: 4 },
-  btn: {
-    height: 30, minWidth: 30, padding: '0 10px', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)',
-    background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 500, cursor: 'pointer',
-  },
-  segment: { display: 'flex', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' },
-  seg: {
-    height: 28, padding: '0 12px', border: 0, background: 'var(--bg-surface)', color: 'var(--text-secondary)',
-    fontSize: 12, cursor: 'pointer',
-  },
-  segOn: {
-    height: 28, padding: '0 12px', border: 0, background: 'var(--accent-subtle)', color: 'var(--accent-text)',
-    fontSize: 12, fontWeight: 600, cursor: 'pointer',
-  },
-  body: { flex: 1, display: 'flex', minHeight: 0, position: 'relative' },
-  main: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)' },
 
   rail: {
-    width: 236, flexShrink: 0, boxSizing: 'border-box', padding: '18px 16px', display: 'flex', flexDirection: 'column',
-    gap: 22, borderRight: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', overflowY: 'auto',
+    width: 200, flexShrink: 0, boxSizing: 'border-box', padding: '4px 0', display: 'flex', flexDirection: 'column',
+    gap: 24, overflowY: 'auto',
   },
   railHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  railLabel: {
-    fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)',
-  },
   miniGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '2px 0', textAlign: 'center' },
   miniDow: { fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 600, paddingBottom: 2 },
   miniDay: {
     fontSize: 11, lineHeight: '24px', border: 0, padding: 0, background: 'transparent', color: 'var(--text-primary)',
     cursor: 'pointer', borderRadius: 'var(--radius-sm)', fontVariantNumeric: 'tabular-nums',
   },
-  iconBtn: { border: 0, background: 'transparent', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '0 4px', fontSize: 12 },
   account: { display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: 10 },
   accountHead: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-secondary)', padding: '2px 0 4px' },
   ellipsis: { flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   calRow: { display: 'flex', alignItems: 'center', gap: 9, padding: '5px 4px', fontSize: 12, cursor: 'pointer' },
-  linkBtn: {
-    border: 0, borderTop: '1px dashed var(--border-subtle)', background: 'transparent', color: 'var(--accent-text)',
-    fontSize: 12, fontWeight: 500, textAlign: 'left', padding: '8px 4px', cursor: 'pointer',
-  },
 
   dayHeads: { display: 'flex', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 },
   gutter: { width: 52, flexShrink: 0 },
@@ -112,10 +91,7 @@ export const s: Styles = {
   panelBody: { padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 18 },
   panelTitle: { margin: 0, fontSize: 19, lineHeight: '24px', fontWeight: 600, letterSpacing: '-0.01em' },
   meta: { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text-secondary)' },
-  join: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', height: 34, borderRadius: 'var(--radius-sm)',
-    background: 'var(--accent-solid)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none',
-  },
-  transcript: { border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', background: 'var(--accent-subtle)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 },
-  sectionLabel: { fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' },
+  // A ui-card washed in the accent, as on the host's transcript surfaces.
+  transcript: { background: 'var(--accent-subtle)', borderColor: 'transparent', display: 'flex', flexDirection: 'column', gap: 10 },
+  transcriptMeta: { fontSize: 12, color: 'var(--text-secondary)' },
 };

@@ -27,12 +27,12 @@ export function Rail({ cursor, accounts, hidden, onToggle, onPick, onManage }: P
     <aside style={s.rail}>
       <section aria-label="Mini calendar" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={s.railHead}>
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            {cursor.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+          <span style={{ fontSize: 13, fontWeight: 600 }}>
+            {cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
           </span>
           <span>
-            <button type="button" style={s.iconBtn} aria-label="Previous month" onClick={() => shift(-1)}>‹</button>
-            <button type="button" style={s.iconBtn} aria-label="Next month" onClick={() => shift(1)}>›</button>
+            <button type="button" className="ui-btn is-ghost is-sm ui-ibtn" aria-label="Previous month" onClick={() => shift(-1)}>‹</button>
+            <button type="button" className="ui-btn is-ghost is-sm ui-ibtn" aria-label="Next month" onClick={() => shift(1)}>›</button>
           </span>
         </div>
         <div style={s.miniGrid}>
@@ -64,13 +64,13 @@ export function Rail({ cursor, accounts, hidden, onToggle, onPick, onManage }: P
 
       <section aria-label="Calendars" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div style={{ ...s.railHead, paddingBottom: 4 }}>
-          <span style={s.railLabel}>Calendars</span>
+          <span className="ui-card-lbl">Calendars</span>
         </div>
         {accounts.map((a) => (
           <div key={a.accountId} style={s.account}>
             <div style={s.accountHead}>
               <span style={s.ellipsis}>{a.identifier}</span>
-              <button type="button" style={s.iconBtn} aria-label={`Choose calendars for ${a.identifier}`} onClick={onManage}>⚙</button>
+              <button type="button" className="ui-btn is-ghost is-sm ui-ibtn" aria-label={`Choose calendars for ${a.identifier}`} onClick={onManage}>⚙</button>
             </div>
             {a.calendars.map((c) => (
               <label key={c.id} style={s.calRow}>
@@ -86,7 +86,7 @@ export function Rail({ cursor, accounts, hidden, onToggle, onPick, onManage }: P
             ))}
           </div>
         ))}
-        <button type="button" style={s.linkBtn} onClick={onManage}>+ Connect another Google account</button>
+        <button type="button" className="ui-link" style={{ marginTop: 8 }} onClick={onManage}>+ Connect another Google account</button>
       </section>
     </aside>
   );

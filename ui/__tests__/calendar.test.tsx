@@ -69,7 +69,7 @@ it('switches to month view', async () => {
     fireEvent.click(screen.getByRole('button', { name: 'Month' }));
     await new Promise((r) => setTimeout(r, 0));
   });
-  expect(screen.getByText('September 2026')).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'September 2026' })).toBeTruthy();
 });
 
 it('clicking a day lists all its meetings; one opens its details and Back returns to the day', async () => {
@@ -147,4 +147,22 @@ it('Join opens Meet as the account the event came from; other links stay as they
   await act(async () => { fireEvent.click(screen.getByText('Zoom thing')); });
   expect((screen.getByRole('link', { name: 'Join' }) as HTMLAnchorElement).href).toBe('https://zoom.us/j/123?pwd=x');
   (Date.now as jest.Mock).mockRestore();
+});
+
+it('the page leaves its title to the host and leads with the range', async () => {
+  await mount(shared);
+  expect(screen.queryByRole('heading', { name: 'Calendar' })).toBeNull();
+  expect(screen.getByRole('heading', { name: /^21 – .*2026$/ })).toBeTruthy();
+});
+
+it("the transcript card shows the meeting's length, and none for a record without it", async () => {
+  const doc = (durationMs?: number) => [{ id: 't', createdAt: '2026-09-24T08:00:00.000Z', ingestedAt: '2026-09-24T09:10:00.000Z',
+    markdown: '## Summary\n- decided X', metadata: { meetingId: 'm1', durationMs, calendarEvent: { occurrenceKey: 'K' } } }];
+  const first = await mount(shared, doc(48 * 60_000));
+  await act(async () => { fireEvent.click(await screen.findByText('Design review')); });
+  expect(within(screen.getByRole('region', { name: 'Linked transcript' })).getByText('48 min')).toBeTruthy();
+  first.unmount();
+  await mount(shared, doc(undefined));
+  await act(async () => { fireEvent.click(await screen.findByText('Design review')); });
+  expect(within(screen.getByRole('region', { name: 'Linked transcript' })).queryByText(/ min$/)).toBeNull();
 });

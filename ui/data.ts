@@ -9,7 +9,7 @@ export interface EventDoc {
 }
 export interface TranscriptDoc {
   id: string; createdAt: string | null; ingestedAt: string; markdown: string | null;
-  metadata: { meetingId?: string; calendarEvent?: { occurrenceKey: string } };
+  metadata: { meetingId?: string; durationMs?: number; calendarEvent?: { occurrenceKey: string } };
 }
 export type Invoke = (channel: string, req: unknown) => Promise<unknown>;
 
