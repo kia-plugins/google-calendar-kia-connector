@@ -107,9 +107,10 @@ export default function CalendarPage({ params, navigate }: {
     ]);
     try {
       const [evs, state] = await eFetch;
+      // Still right for its own range even when superseded: keep it.
+      const visible = evs.filter((e) => overlaps(e, start, end));
+      remember(rangeKey, visible);
       if (current()) {
-        const visible = evs.filter((e) => overlaps(e, start, end));
-        remember(rangeKey, visible);
         setEvents(visible);
         const colorOf = (id: string, i: number) =>
           evs.find((e) => e.metadata.calendarId === id)?.metadata.calendarColor ?? PALETTE[i % PALETTE.length];
