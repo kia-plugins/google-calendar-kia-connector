@@ -13,9 +13,12 @@ async function mount(events: any[], transcripts: any[] = [], accounts?: any[], h
     if (ch === 'app:get-state') return { seq: 1, rev: 1, state: { accounts: accounts ?? [
       { account: { id: 'A', source: 'google-calendar', identifier: 'me@work.com', config: { folderRoots: [{ id: 'work', name: 'Work' }] } } },
       { account: { id: 'B', source: 'google-calendar', identifier: 'me@home.com', config: { folderRoots: [{ id: 'home', name: 'Home' }] } } },
+      { account: { id: 'M', source: 'meetings', identifier: 'local' } },
     ] } };
     if (ch === 'search:query') {
-      const src = q.type === 'calendar.event' ? events : transcripts;
+      const src = q.type === 'calendar.event'
+        ? events.filter((e) => e.accountId === q.account)
+        : q.account === 'M' ? transcripts : [];
       return src.slice(q.offset, q.offset + q.limit);
     }
     return null;
@@ -181,4 +184,11 @@ it('a revisit paints the last events at once, before any query answers', async (
   await mount([], [], undefined, () => true);
   expect(screen.getAllByText('Design review')).toHaveLength(1);
   expect(screen.getByLabelText('Work')).toBeTruthy(); // the rail's calendars too
+});
+
+it('every search names its account, so it can use the per-account index', async () => {
+  const { invoke } = await mount(shared);
+  const searches = invoke.mock.calls.filter(([ch]) => ch === 'search:query').map(([, q]) => q);
+  expect(searches.filter((q) => q.type === 'calendar.event').map((q) => q.account).sort()).toEqual(['A', 'B']);
+  expect(searches.filter((q) => q.type === 'meeting.transcript').map((q) => q.account)).toEqual(['M']);
 });

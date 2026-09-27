@@ -93,20 +93,29 @@ export default function CalendarPage({ params, navigate }: {
     const end = new Date(endMs);
     const from = new Date(startMs - LOOKBACK_MS);
     const q = { fromDate: from.toISOString(), toDate: end.toISOString() };
-    // All three go out together; the grid paints as soon as the events are
-    // in and never waits on transcripts, which only add badges.
+    // Every query names its account: the documents index leads with the
+    // account, so a by-type query without one walks the whole corpus.
+    let state: AppState;
+    try {
+      state = (await invoke('app:get-state', undefined)) as AppState;
+    } catch (err) {
+      if (current()) setError(err instanceof Error ? err.message : String(err));
+      return;
+    }
+    const perAccount = <T,>(source: string, query: Record<string, unknown>) => Promise.all(
+      state.state.accounts.filter((a) => a.account.source === source)
+        .map((a) => searchAll<T>(invoke, { ...query, account: a.account.id })),
+    ).then((pages) => pages.flat());
+    // Both go out together; the grid paints as soon as the events are in and
+    // never waits on transcripts, which only add badges.
     // First load: every transcript once; afterwards only the visible slice.
     const whole = !memo.transcriptsLoaded;
     // Settled up front, so a failure here can't go unhandled while the
     // events are still being awaited.
-    const tFetch = searchAll<TranscriptDoc>(invoke, whole ? { type: 'meeting.transcript' } : { type: 'meeting.transcript', ...q })
+    const tFetch = perAccount<TranscriptDoc>('meetings', whole ? { type: 'meeting.transcript' } : { type: 'meeting.transcript', ...q })
       .then((docs) => ({ docs }), (err: unknown) => ({ err }));
-    const eFetch = Promise.all([
-      searchAll<EventDoc>(invoke, { type: 'calendar.event', ...q }),
-      invoke('app:get-state', undefined) as Promise<AppState>,
-    ]);
     try {
-      const [evs, state] = await eFetch;
+      const evs = await perAccount<EventDoc>('google-calendar', { type: 'calendar.event', ...q });
       // Still right for its own range even when superseded: keep it.
       const visible = evs.filter((e) => overlaps(e, start, end));
       remember(rangeKey, visible);
