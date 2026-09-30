@@ -1,6 +1,6 @@
 {
   "name": "google-calendar-kia-connector",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Google Calendar connector for KIAgent",
   "files": [
@@ -12,21 +12,14 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "jest",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.ui.json"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@kiagent/connector-sdk": "https://github.com/edjafarov/kiagent-core/releases/download/sdk-v1.6.0/kiagent-connector-sdk-1.6.0.tgz",
-    "@testing-library/dom": "^10.4.2",
-    "@testing-library/react": "^16.3.3",
+    "@kiagent/connector-sdk": "file:.sdk/kiagent-connector-sdk-1.7.0.tgz",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.11.0",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
     "esbuild": "^0.24.0",
     "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
     "ts-jest": "^29.2.0",
     "typescript": "^5.6.0"
   }
