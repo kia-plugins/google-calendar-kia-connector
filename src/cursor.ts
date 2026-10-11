@@ -5,7 +5,8 @@ export interface Cursor { v: 1; since: string; calendars: Record<string, CalEntr
 
 export const DAY = 86_400_000;
 export const SINCE_DAYS = 365;
-export const HORIZON_DAYS = 400;
+/** Events more than 12 months ahead are never stored. */
+export const HORIZON_DAYS = 365;
 export const REFRESH_DAYS = 30;
 export const CHUNK = 250;
 

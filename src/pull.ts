@@ -7,6 +7,7 @@ import type { GEvent, GEventsPage } from './google-types';
 import { listCalendars, rootsOf } from './calendars';
 
 const iso = (ms: number) => new Date(ms).toISOString();
+const startMs = (e: GEvent) => Date.parse(e.start?.dateTime ?? e.start?.date ?? '');
 
 async function listAll(client: CalendarClient, calendarId: string, p: { timeMin?: string; timeMax?: string; syncToken?: string }) {
   const events: GEvent[] = [];
@@ -33,6 +34,7 @@ export async function* pullCalendars(args: {
   const { host, session, client } = args;
   const now = args.now();
   const phase = args.cursor === null ? 'backfill' : 'live';
+  const horizon = now + HORIZON_DAYS * DAY;
   const roots = rootsOf(session);
   let cur: Cursor = prune(args.cursor ?? { v: 1, since: iso(now - SINCE_DAYS * DAY), calendars: {} }, roots.map((r) => r.id));
 
@@ -66,8 +68,11 @@ export async function* pullCalendars(args: {
         try {
           const r = await listAll(client, root.id, { syncToken: entry.syncToken });
           const cal = meta(root.id, root.name, r.timeZone);
-          const items = r.events.filter(isLive).map((event) => ({ calendar: cal, event }));
-          const deletions: ExternalRef[] = r.events.filter((e) => !isLive(e)).map((e) => ({ externalId: externalIdOf(root.id, e.id), type: DOC_TYPE }));
+          // A sync token returns every changed occurrence of a series, decades
+          // ahead; past the horizon they go (and any stored copy is removed).
+          const kept = (e: GEvent) => isLive(e) && !(startMs(e) > horizon);
+          const items = r.events.filter(kept).map((event) => ({ calendar: cal, event }));
+          const deletions: ExternalRef[] = r.events.filter((e) => !kept(e)).map((e) => ({ externalId: externalIdOf(root.id, e.id), type: DOC_TYPE }));
           const dropEntry = r.events.some((e) => e.status === 'cancelled' && !e.recurringEventId);
           const calendars = { ...cur.calendars };
           if (dropEntry || !r.nextSyncToken) delete calendars[root.id];
@@ -80,7 +85,7 @@ export async function* pullCalendars(args: {
           if (!isStatus(e, 410)) throw e; // 410 → fall through to a full list
         }
       }
-      const r = await listAll(client, root.id, { timeMin: cur.since, timeMax: iso(now + HORIZON_DAYS * DAY) });
+      const r = await listAll(client, root.id, { timeMin: cur.since, timeMax: iso(horizon) });
       const cal = meta(root.id, root.name, r.timeZone);
       const live = r.events.filter(isLive);
       if (!r.nextSyncToken)

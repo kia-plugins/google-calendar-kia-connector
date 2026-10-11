@@ -35,7 +35,7 @@ it('first pull: full lists every calendar; tokens commit only in the final batch
   expect(fin.cursor).toEqual({ v: 1, since: new Date(NOW - 365 * 86_400_000).toISOString(), calendars: {
     [A]: { syncToken: 'TA', fullAt: new Date(NOW).toISOString() }, [B]: { syncToken: 'TB', fullAt: new Date(NOW).toISOString() } } });
   const full = new URL(calls.find((c) => c.includes('/events'))!);
-  expect(full.searchParams.get('timeMax')).toBe(new Date(NOW + 400 * 86_400_000).toISOString());
+  expect(full.searchParams.get('timeMax')).toBe(new Date(NOW + 365 * 86_400_000).toISOString());
 });
 
 it('incremental: live → items, cancelled instance → deletion, token stored; second calendar keeps the first token; phase live', async () => {
@@ -176,4 +176,19 @@ it('stale cleanup keeps paging until an empty page, however the store clamps', a
   const out: Batch<Cursor, CalItem>[] = [];
   for await (const b of source.pull(session, null)) out.push(b);
   expect(out.at(-1)!.deletions).toHaveLength(700);
+});
+
+it('incremental: an occurrence more than 12 months ahead is deleted, not stored', async () => {
+  const cur: Cursor = { v: 1, since: 'S', calendars: { [A]: { syncToken: 'a1', fullAt: fresh } } };
+  const at = (days: number) => ({ dateTime: new Date(NOW + days * 86_400_000).toISOString() });
+  const { batches } = await run({ calendars: { [A]: { inc: { a1: { items: [
+    ev('soon', { recurringEventId: 'ser', start: at(300) }),
+    ev('far', { recurringEventId: 'ser', start: at(400) }),
+    ev('allday', { start: { date: '2087-06-03' } }),
+  ], next: 'a2' } } } } }, cur, [], [roots[0]]);
+  expect(batches[0].items.map((i) => i.event.id)).toEqual(['soon']);
+  expect(batches[0].deletions).toEqual([
+    { externalId: `${A}:far`, type: 'calendar.event' },
+    { externalId: `${A}:allday`, type: 'calendar.event' },
+  ]);
 });
