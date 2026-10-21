@@ -7,7 +7,7 @@ import type { GCalendarListEntry, GEvent } from './google-types';
 
 export interface WriterSeams { now?(): number; sleep?(ms: number): Promise<void> }
 
-/** Google event colorId per category (§8): work Blueberry, personal Sage, kids Flamingo. */
+/** Google event colorId per category (§8): work Blueberry, personal Sage, kids Tangerine. */
 const COLOR_ID: Record<EventCategory, string> = { work: '9', personal: '2', kids: '6' };
 const DEADLINE_MS = 40_000;
 const ALPHABET = '0123456789abcdefghijklmnopqrstuv';
