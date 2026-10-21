@@ -51,6 +51,12 @@ const stripHtml = (s: string): string =>
   s.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
 
+const CATEGORIES = ['work', 'personal', 'kids'];
+const categoryOf = (e: GEvent): string | null => {
+  const c = e.extendedProperties?.private?.kiaCategory;
+  return c && CATEGORIES.includes(c) ? c : null;
+};
+
 export function toDocument(item: CalItem): DocumentInput {
   const { calendar: cal, event: e } = item;
   const allDay = Boolean(e.start?.date);
@@ -91,6 +97,7 @@ export function toDocument(item: CalItem): DocumentInput {
       organizer, selfResponse: self?.responseStatus ?? null,
       attendees, participants,
       conferenceUrl: conferenceUrl(e), location: e.location ?? null,
+      category: categoryOf(e),
       eventType: e.eventType ?? 'default', transparency: e.transparency ?? 'opaque',
     },
   };

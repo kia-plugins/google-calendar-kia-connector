@@ -1,6 +1,6 @@
 {
   "name": "google-calendar-kia-connector",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "private": true,
   "description": "Google Calendar connector for KIAgent",
   "files": [
@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@kiagent/connector-sdk": "https://github.com/edjafarov/kiagent-core/releases/download/sdk-v1.7.0/kiagent-connector-sdk-1.7.0.tgz",
+    "@kiagent/connector-sdk": "https://github.com/edjafarov/kiagent-core/releases/download/sdk-v1.12.0/kiagent-connector-sdk-1.12.0.tgz",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.11.0",
     "esbuild": "^0.24.0",
