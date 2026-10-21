@@ -19,7 +19,12 @@ export interface GEvent {
   organizer?: { email?: string; displayName?: string; self?: boolean };
   attendees?: GAttendee[];
   hangoutLink?: string;
-  conferenceData?: { entryPoints?: { entryPointType?: string; uri?: string }[] };
+  conferenceData?: {
+    entryPoints?: { entryPointType?: string; uri?: string }[];
+    createRequest?: { requestId?: string; status?: { statusCode?: string } };
+  };
+  colorId?: string;
+  extendedProperties?: { private?: Record<string, string> };
   eventType?: string;
   transparency?: 'opaque' | 'transparent';
 }
@@ -37,4 +42,5 @@ export interface GCalendarListEntry {
   primary?: boolean;
   selected?: boolean;
   timeZone?: string;
+  accessRole?: 'freeBusyReader' | 'reader' | 'writer' | 'owner';
 }

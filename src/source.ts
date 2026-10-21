@@ -9,6 +9,8 @@ import type { GCalendarListEntry } from './google-types';
 import { pullCalendars } from './pull';
 
 export const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+export const SCOPE_EVENTS = 'https://www.googleapis.com/auth/calendar.events';
+export const SCOPES = [SCOPE, SCOPE_EVENTS];
 
 export interface CalendarSeams { now?(): number; sleep?(ms: number): Promise<void>; random?(): number }
 
@@ -61,7 +63,7 @@ export function createCalendarSource(host: HostFor<'net' | 'query'>, seams: Cale
 
     async connect(auth: AuthChannel) {
       auth.status('Waiting for Google sign-in…');
-      const creds = await auth.oauth([SCOPE]);
+      const creds = await auth.oauth(SCOPES);
       if (!creds.accessToken) throw new Error('google-calendar: Google sign-in returned no access token');
       auth.status('Loading your calendars…');
       const cals = await listCalendars(tokenClient(creds.accessToken));
@@ -72,7 +74,7 @@ export function createCalendarSource(host: HostFor<'net' | 'query'>, seams: Cale
 
     async reauthenticate(account: Account, auth: AuthChannel) {
       auth.status('Waiting for Google sign-in…');
-      const creds = await auth.oauth([SCOPE]);
+      const creds = await auth.oauth(SCOPES);
       if (!creds.accessToken) throw new Error('google-calendar: Google sign-in returned no access token');
       auth.status('Verifying the Google account…');
       const email = primaryId(await listCalendars(tokenClient(creds.accessToken)));

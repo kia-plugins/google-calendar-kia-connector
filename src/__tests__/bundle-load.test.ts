@@ -92,6 +92,9 @@ describe('dist bundle loads standalone', () => {
     const result = (await entry.activate(host)) as { sources?: Source[] };
     expect(result.sources?.[0]?.descriptor.auth).toBe('oauth');
     expect(result.sources?.[0]?.descriptor.folderScope).toBe(true);
+    const writers = (result as { calendarWriters?: Record<string, { createEvent?: unknown; listCalendars?: unknown }> }).calendarWriters;
+    expect(typeof writers?.['google-calendar']?.createEvent).toBe('function');
+    expect(typeof writers?.['google-calendar']?.listCalendars).toBe('function');
 
     // ── Bare-process load probe ───────────────────────────────────────────
     // dist/index.js ALONE, copied into an EMPTY temp dir: no package.json, no
@@ -164,11 +167,11 @@ e.activate({
 `;
 
 describe('data only (2.0.0): the Calendar page lives in the app', () => {
-  it('contributes no ui, needs engine ^2.6.0, and builds no dist/ui (runs after the build above)', () => {
+  it('contributes no ui, needs engine ^2.16.0, and builds no dist/ui (runs after the build above)', () => {
     const root = join(__dirname, '..', '..');
     const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'));
     expect(manifest.contributes.ui).toBeUndefined();
-    expect(manifest.engine).toBe('^2.6.0');
+    expect(manifest.engine).toBe('^2.16.0');
     expect(existsSync(join(root, 'dist', 'ui'))).toBe(false);
   });
 });

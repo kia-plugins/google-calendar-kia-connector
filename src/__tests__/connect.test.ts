@@ -1,5 +1,5 @@
 // src/__tests__/connect.test.ts
-import { createCalendarSource, SCOPE } from '../source';
+import { createCalendarSource, SCOPES } from '../source';
 import { eventsUrl } from '../cursor';
 import { calWorld, fakeAuthChannel, fakeFolderSelectionChannel, fakeSession, instantClock, makeHost } from '../testing/harness';
 
@@ -9,12 +9,12 @@ const list = [
   { id: 'holidays@group.v.calendar.google.com', summary: 'Holidays', selected: false },
 ];
 
-it('connect: oauth with the calendar scope, flat picker preselecting Google-selected calendars, identifier = primary id', async () => {
+it('connect: oauth with the calendar read + events scopes, flat picker preselecting Google-selected calendars, identifier = primary id', async () => {
   const { fetchFn } = calWorld({ calendarList: list });
   const source = createCalendarSource(makeHost(fetchFn), instantClock);
   let spec: any;
   const auth = fakeAuthChannel({
-    oauth: async (scopes) => { expect(scopes).toEqual([SCOPE]); return { accessToken: 'tok' } as any; },
+    oauth: async (scopes) => { expect(scopes).toEqual(SCOPES); return { accessToken: 'tok' } as any; },
     pickFolders: async (s) => { spec = s; return [{ id: list[0].id, name: 'me@example.com', hasChildren: false }]; },
   });
   const res = await source.connect(auth);
