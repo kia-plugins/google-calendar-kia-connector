@@ -1,14 +1,25 @@
 {
   "id": "kia.google-calendar",
   "name": "Google Calendar",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "engine": "^2.21.0",
   "entry": "dist/index.js",
-  "caps": ["net", "query", "calendar.write"],
+  "caps": [
+    "net",
+    "query",
+    "calendar.write"
+  ],
   "contributes": {
-    "sources": [{ "id": "google-calendar", "oauth": "google" }],
+    "sources": [
+      {
+        "id": "google-calendar",
+        "oauth": "google"
+      }
+    ],
     "senders": [],
-    "calendarWriters": ["google-calendar"]
+    "calendarWriters": [
+      "google-calendar"
+    ]
   },
   "icon": "icon.png"
 }
