@@ -33,21 +33,30 @@ function base32hex(bytes: Uint8Array): string {
 export const eventIdFor = (idempotencyKey: string): string =>
   'kia' + base32hex(createHash('sha256').update(idempotencyKey).digest()).slice(0, 26);
 
-/** Google's own error sentence, when the body carries one. */
-function structuredMessage(e: CalendarApiError): string | null {
+interface GoogleErrorBody { error?: { message?: string; errors?: Array<{ reason?: string }> } }
+const parsed = (e: CalendarApiError): GoogleErrorBody => {
   try {
-    return (JSON.parse(e.body) as { error?: { message?: string } }).error?.message ?? null;
+    return JSON.parse(e.body) as GoogleErrorBody;
   } catch {
-    return null;
+    return {};
   }
+};
+
+/** Google's own error sentence; else `fallback`, else the start of the body. */
+function googleMessage(e: CalendarApiError, fallback?: string): string {
+  return parsed(e).error?.message || fallback || e.body.slice(0, 200) || `HTTP ${e.status}`;
 }
 
-function googleMessage(e: CalendarApiError): string {
-  try {
-    const m = (JSON.parse(e.body) as { error?: { message?: string } }).error?.message;
-    if (m) return m;
-  } catch { /* not JSON */ }
-  return e.body.slice(0, 200) || `HTTP ${e.status}`;
+const RATE_LIMITED = 'rate-limited: Google Calendar is busy — try again in a minute';
+
+/** A 403 is not always missing permission: Google also uses it for rate
+ *  limits and for changes only the organizer may make. */
+function forbidden(e: CalendarApiError, calendarId: string, verb: string): Error {
+  const reason = parsed(e).error?.errors?.[0]?.reason ?? '';
+  if (/rateLimitExceeded/i.test(reason)) return new Error(RATE_LIMITED);
+  if (reason === 'forbiddenForNonOrganizer' || reason === 'requiredAccessLevel')
+    return new Error('only the organizer can change this event');
+  return new Error(`reconnect Google Calendar (${calendarId}) in Settings to allow ${verb} events`);
 }
 
 const conferenceUrlOf = (e: GEvent): string | null =>
@@ -127,9 +136,9 @@ export function createCalendarWriter(host: HostFor<'net'>, seams: WriterSeams = 
           // Same key, already created: read it back instead of duplicating.
           event = (await client.write<GEvent>('GET', `${base}/${id}`, undefined, { deadline, idempotent: true })).json;
         } else if (e.status === 403) {
-          throw new Error(`reconnect Google Calendar (${intent.calendarId}) in Settings to allow adding events`);
+          throw forbidden(e, intent.calendarId, 'adding');
         } else if (e.status === 429) {
-          throw new Error('rate-limited: Google Calendar is busy — try again in a minute');
+          throw new Error(RATE_LIMITED);
         } else if (e.status >= 400 && e.status < 500) {
           throw new Error(`not created: ${googleMessage(e)}`);
         } else {
@@ -158,15 +167,18 @@ export function createCalendarWriter(host: HostFor<'net'>, seams: WriterSeams = 
       try {
         event = (await client.write<GEvent>('PATCH', url, body, { deadline: now() + DEADLINE_MS, idempotent: true })).json;
       } catch (e) {
-        if (!(e instanceof CalendarApiError)) throw e;
-        if (e.status === 403) {
-          throw new Error(`reconnect Google Calendar (${patch.calendarId}) in Settings to allow changing events`);
+        // The engine reads the auth error's code to ask for a reconnect.
+        if (e instanceof CalendarAuthError) throw e;
+        if (!(e instanceof CalendarApiError)) {
+          // Network failure or timeout: never the internal URL.
+        } else if (e.status === 403) {
+          throw forbidden(e, patch.calendarId, 'changing');
         } else if (e.status === 404 || e.status === 410) {
           throw new Error('this event no longer exists');
         } else if (e.status === 429) {
-          throw new Error('rate-limited: Google Calendar is busy — try again in a minute');
+          throw new Error(RATE_LIMITED);
         } else if (e.status >= 400 && e.status < 500) {
-          throw new Error(`not changed: ${structuredMessage(e) ?? `Google Calendar refused the change (HTTP ${e.status})`}`);
+          throw new Error(`not changed: ${googleMessage(e, `Google Calendar refused the change (HTTP ${e.status})`)}`);
         }
         // Retries are spent: say so plainly, never the raw response.
         throw new Error('not changed: Google Calendar is not answering — try again in a minute');

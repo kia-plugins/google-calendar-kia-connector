@@ -171,3 +171,23 @@ it('update maps 403, 404/410, 429 and other 4xx', async () => {
     'not changed: Google Calendar is not answering — try again in a minute',
   );
 });
+
+it('update: a 403 for rate limits or non-organizers is not a reconnect', async () => {
+  const run = (reason: string) =>
+    writerWith(() => jsonRes(403, { error: { message: 'x', errors: [{ reason }] } })).writer.updateEvent!(
+      patchOf({ title: 'x' }), ctx,
+    );
+  await expect(run('rateLimitExceeded')).rejects.toThrow(/rate-limited/);
+  await expect(run('userRateLimitExceeded')).rejects.toThrow(/rate-limited/);
+  await expect(run('forbiddenForNonOrganizer')).rejects.toThrow('only the organizer can change this event');
+  await expect(run('insufficientPermissions')).rejects.toThrow(/reconnect Google Calendar/);
+});
+
+it('update: a network failure is a plain sentence, never the URL', async () => {
+  const { writer } = writerWith(() => {
+    throw new TypeError('fetch failed');
+  });
+  await expect(writer.updateEvent!(patchOf({ title: 'x' }), ctx)).rejects.toThrow(
+    'not changed: Google Calendar is not answering — try again in a minute',
+  );
+});
