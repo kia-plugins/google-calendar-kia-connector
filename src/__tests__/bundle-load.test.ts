@@ -66,6 +66,7 @@ describe('dist bundle loads standalone', () => {
     const host: HostFor<'net' | 'query'> = {
       self: { id: 'kia.google-calendar', dataDir: '/tmp' },
       log: () => {},
+      role: { get: async () => 'normal' as never },
       net: { fetch: unused },
       query: {
         document: unused,
@@ -167,11 +168,11 @@ e.activate({
 `;
 
 describe('data only (2.0.0): the Calendar page lives in the app', () => {
-  it('contributes no ui, needs engine ^2.16.0, and builds no dist/ui (runs after the build above)', () => {
+  it('contributes no ui, needs engine ^2.21.0, and builds no dist/ui (runs after the build above)', () => {
     const root = join(__dirname, '..', '..');
     const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'));
     expect(manifest.contributes.ui).toBeUndefined();
-    expect(manifest.engine).toBe('^2.16.0');
+    expect(manifest.engine).toBe('^2.21.0');
     expect(existsSync(join(root, 'dist', 'ui'))).toBe(false);
   });
 });

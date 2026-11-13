@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type {
-  CalendarWriter, CreatedEvent, EventCategory, EventIntent, HostFor, SenderContext, WritableCalendar,
+  CalendarWriter, CreatedEvent, EventCategory, EventIntent, EventPatch, HostFor, SenderContext, UpdatedEvent, WritableCalendar,
 } from '@kiagent/connector-sdk';
 import { CalendarApiError, CalendarAuthError, CalendarClient, CAL_API } from './client';
 import type { GCalendarListEntry, GEvent } from './google-types';
@@ -135,6 +135,33 @@ export function createCalendarWriter(host: HostFor<'net'>, seams: WriterSeams = 
         conferencePending: event.conferenceData?.createRequest?.status?.statusCode === 'pending',
         note: null,
       };
+    },
+
+    async updateEvent(patch: EventPatch, ctx): Promise<UpdatedEvent> {
+      const client = clientFor(ctx);
+      const url = `${CAL_API}/calendars/${encodeURIComponent(patch.calendarId)}/events/${encodeURIComponent(patch.eventId)}?sendUpdates=all`;
+      const body: Record<string, unknown> = {};
+      if (patch.title !== undefined) body.summary = patch.title;
+      if (patch.location !== undefined) body.location = patch.location ?? '';
+      if (patch.start !== undefined) body.start = { dateTime: patch.start, timeZone: patch.timeZone };
+      if (patch.end !== undefined) body.end = { dateTime: patch.end, timeZone: patch.timeZone };
+      let event: GEvent;
+      try {
+        event = (await client.write<GEvent>('PATCH', url, body, { deadline: now() + DEADLINE_MS, idempotent: true })).json;
+      } catch (e) {
+        if (!(e instanceof CalendarApiError)) throw e;
+        if (e.status === 403) {
+          throw new Error(`reconnect Google Calendar (${patch.calendarId}) in Settings to allow changing events`);
+        } else if (e.status === 404 || e.status === 410) {
+          throw new Error('this event no longer exists');
+        } else if (e.status === 429) {
+          throw new Error('rate-limited: Google Calendar is busy — try again in a minute');
+        } else if (e.status >= 400 && e.status < 500) {
+          throw new Error(`not changed: ${googleMessage(e)}`);
+        }
+        throw e;
+      }
+      return { eventId: event.id, htmlLink: event.htmlLink ?? null };
     },
   };
 }

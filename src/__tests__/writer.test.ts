@@ -1,4 +1,4 @@
-import type { EventIntent } from '@kiagent/connector-sdk';
+import type { EventIntent, EventPatch } from '@kiagent/connector-sdk';
 import { eventIdFor, createCalendarWriter } from '../writer';
 import { instantClock, jsonRes, makeHost } from '../testing/harness';
 import { toDocument } from '../document';
@@ -128,4 +128,42 @@ it('document carries category from the Kia stamp', () => {
   expect(cat({ kiaCategory: 'kids' })).toBe('kids');
   expect(cat({ kiaCategory: 'bogus' })).toBeNull();
   expect(cat()).toBeNull();
+});
+
+const patchOf = (o: Partial<EventPatch> = {}): EventPatch =>
+  ({ accountId: 'acc1' as never, calendarId: 'a@example.com', eventId: 'ev1', ...o });
+
+it('update PATCHes only the changed fields', async () => {
+  const { writer, calls } = writerWith(() => created({ id: 'ev1' }));
+  const res = await writer.updateEvent!(patchOf({ title: 'Dentist 2' }), ctx);
+  expect(calls).toHaveLength(1);
+  expect(calls[0].url).toBe('https://www.googleapis.com/calendar/v3/calendars/a%40example.com/events/ev1?sendUpdates=all');
+  expect(calls[0].init.method).toBe('PATCH');
+  expect(JSON.parse(calls[0].init.body!)).toEqual({ summary: 'Dentist 2' });
+  expect(res).toEqual({ eventId: 'ev1', htmlLink: 'https://cal/x' });
+});
+
+it('update sends time as dateTime + timeZone, and clears location with an empty string', async () => {
+  const a = writerWith(() => created());
+  await a.writer.updateEvent!(patchOf({ start: '2026-10-22T10:00:00+02:00', end: '2026-10-22T11:00:00+02:00', timeZone: 'Europe/Berlin' }), ctx);
+  expect(JSON.parse(a.calls[0].init.body!)).toEqual({
+    start: { dateTime: '2026-10-22T10:00:00+02:00', timeZone: 'Europe/Berlin' },
+    end: { dateTime: '2026-10-22T11:00:00+02:00', timeZone: 'Europe/Berlin' },
+  });
+  const b = writerWith(() => created());
+  await b.writer.updateEvent!(patchOf({ location: null }), ctx);
+  expect(JSON.parse(b.calls[0].init.body!)).toEqual({ location: '' });
+  const c = writerWith(() => created());
+  await c.writer.updateEvent!(patchOf({ location: 'Cafe' }), ctx);
+  expect(JSON.parse(c.calls[0].init.body!)).toEqual({ location: 'Cafe' });
+});
+
+it('update maps 403, 404/410, 429 and other 4xx', async () => {
+  const run = (status: number, body: unknown = {}) =>
+    writerWith(() => jsonRes(status, body)).writer.updateEvent!(patchOf({ title: 'x' }), ctx);
+  await expect(run(403)).rejects.toThrow(/reconnect Google Calendar .*allow changing events/);
+  await expect(run(404)).rejects.toThrow('this event no longer exists');
+  await expect(run(410)).rejects.toThrow('this event no longer exists');
+  await expect(run(429)).rejects.toThrow(/rate-limited/);
+  await expect(run(400, { error: { message: 'Invalid time' } })).rejects.toThrow('not changed: Invalid time');
 });
