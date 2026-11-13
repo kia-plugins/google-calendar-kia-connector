@@ -1,8 +1,8 @@
 {
   "id": "kia.google-calendar",
   "name": "Google Calendar",
-  "version": "3.0.0",
-  "engine": "^2.16.0",
+  "version": "3.1.0",
+  "engine": "^2.21.0",
   "entry": "dist/index.js",
   "caps": ["net", "query", "calendar.write"],
   "contributes": {

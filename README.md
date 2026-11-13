@@ -1,8 +1,8 @@
 # Google Calendar for KIAgent
 
 Syncs the calendars you choose, from any number of Google accounts, into your
-KIAgent memory as `calendar.event` documents. Read-only
-(`calendar.readonly`).
+KIAgent memory as `calendar.event` documents. Events can also be created and
+changed from KIAgent (title, time and location of an existing event).
 
 - **Connect:** Sources → Add → Google Calendar. Sign-in goes through
   KIAgent's Google gate, exactly like Gmail and Google Docs: a founding seat on
