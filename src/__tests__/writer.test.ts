@@ -166,4 +166,8 @@ it('update maps 403, 404/410, 429 and other 4xx', async () => {
   await expect(run(410)).rejects.toThrow('this event no longer exists');
   await expect(run(429)).rejects.toThrow(/rate-limited/);
   await expect(run(400, { error: { message: 'Invalid time' } })).rejects.toThrow('not changed: Invalid time');
+  await expect(run(400, 'raw provider page')).rejects.toThrow('not changed: Google Calendar refused the change (HTTP 400)');
+  await expect(run(503, 'raw provider page')).rejects.toThrow(
+    'not changed: Google Calendar is not answering — try again in a minute',
+  );
 });

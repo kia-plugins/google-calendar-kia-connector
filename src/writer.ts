@@ -33,6 +33,15 @@ function base32hex(bytes: Uint8Array): string {
 export const eventIdFor = (idempotencyKey: string): string =>
   'kia' + base32hex(createHash('sha256').update(idempotencyKey).digest()).slice(0, 26);
 
+/** Google's own error sentence, when the body carries one. */
+function structuredMessage(e: CalendarApiError): string | null {
+  try {
+    return (JSON.parse(e.body) as { error?: { message?: string } }).error?.message ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function googleMessage(e: CalendarApiError): string {
   try {
     const m = (JSON.parse(e.body) as { error?: { message?: string } }).error?.message;
@@ -157,9 +166,10 @@ export function createCalendarWriter(host: HostFor<'net'>, seams: WriterSeams = 
         } else if (e.status === 429) {
           throw new Error('rate-limited: Google Calendar is busy — try again in a minute');
         } else if (e.status >= 400 && e.status < 500) {
-          throw new Error(`not changed: ${googleMessage(e)}`);
+          throw new Error(`not changed: ${structuredMessage(e) ?? `Google Calendar refused the change (HTTP ${e.status})`}`);
         }
-        throw e;
+        // Retries are spent: say so plainly, never the raw response.
+        throw new Error('not changed: Google Calendar is not answering — try again in a minute');
       }
       return { eventId: event.id, htmlLink: event.htmlLink ?? null };
     },
